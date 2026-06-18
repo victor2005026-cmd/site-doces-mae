@@ -1,8 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
-    './app/**/*.{js,jsx,ts,tsx}',
-    './components/**/*.{js,jsx,ts,tsx}',
+    './src/**/*.{js,jsx}',
   ],
   theme: {
     extend: {
@@ -18,9 +17,9 @@ module.exports = {
         rose: '#D4A5A5',
       },
       fontFamily: {
-        title: ['var(--font-playfair)', 'serif'],
-        body: ['var(--font-lato)', 'sans-serif'],
-        script: ['var(--font-great-vibes)', 'cursive'],
+        title: ['"Playfair Display"', 'serif'],
+        body: ['Lato', 'sans-serif'],
+        script: ['"Great Vibes"', 'cursive'],
       },
       boxShadow: {
         sm: '0 2px 10px rgba(60, 36, 21, 0.08)',
