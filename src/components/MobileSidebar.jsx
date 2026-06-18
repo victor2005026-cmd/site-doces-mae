@@ -38,7 +38,7 @@ export default function MobileSidebar({ isOpen, onClose, links }) {
           <a
             href={waLink('Olá! Gostaria de fazer uma encomenda na Doces da Ale 🍫')}
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
             onClick={onClose}
             className="inline-block rounded-full bg-gold px-[30px] py-[14px] text-center text-[0.95rem] font-bold tracking-[0.3px] text-text-primary shadow-sm transition-all hover:-translate-y-[3px] hover:bg-gold-dark hover:shadow-md"
           >

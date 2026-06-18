@@ -7,7 +7,7 @@ export default function Hero() {
       <img
         src="/images/hero-brigadeiros.jpg"
         alt="Pó de cacau caindo sobre doces artesanais da Doces da Ale"
-        fetchPriority="high"
+        fetchpriority="high"
         className="absolute inset-0 h-full w-full object-cover"
       />
       <div className="absolute inset-0 bg-gradient-to-b from-[rgba(20,12,8,0.8)] via-[rgba(20,12,8,0.55)] via-50% to-[rgba(20,12,8,0.88)]" />
@@ -44,7 +44,7 @@ export default function Hero() {
           <Button
             href={waLink('Olá! Gostaria de fazer uma encomenda na Doces da Ale 🍫')}
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
             size="lg"
             className="max-[600px]:w-full"
           >

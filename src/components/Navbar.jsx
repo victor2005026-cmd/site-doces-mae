@@ -77,7 +77,7 @@ export default function Navbar() {
           <Button
             href={waLink('Olá! Gostaria de fazer uma encomenda na Doces da Ale 🍫')}
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
             className="hidden min-[992px]:inline-block whitespace-nowrap"
           >
             Encomendar

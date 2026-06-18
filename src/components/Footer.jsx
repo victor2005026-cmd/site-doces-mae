@@ -18,7 +18,7 @@ export default function Footer() {
           <a
             href={waLink('Olá! Gostaria de fazer uma encomenda na Doces da Ale')}
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
             className="mb-2 block text-[0.95rem] text-[#C9B79F] hover:text-gold"
           >
             WhatsApp
@@ -26,7 +26,7 @@ export default function Footer() {
           <a
             href="https://www.instagram.com/docesdaale"
             target="_blank"
-            rel="noopener"
+            rel="noopener noreferrer"
             className="mb-2 block text-[0.95rem] text-[#C9B79F] hover:text-gold"
           >
             Instagram @docesdaale

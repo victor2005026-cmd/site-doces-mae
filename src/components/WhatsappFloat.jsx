@@ -5,7 +5,7 @@ export default function WhatsappFloat() {
     <a
       href={waLink('Olá! Gostaria de fazer uma encomenda na Doces da Ale 🍫')}
       target="_blank"
-      rel="noopener"
+      rel="noopener noreferrer"
       aria-label="Falar no WhatsApp"
       className="fixed bottom-[26px] right-[26px] z-[999] flex h-[58px] w-[58px] items-center justify-center rounded-full bg-[#25D366] shadow-md transition-all duration-200 hover:scale-110 hover:shadow-lg"
     >

@@ -107,7 +107,7 @@ export default function Cardapio() {
                 <Button
                   href={waLink(item.waMessage)}
                   target="_blank"
-                  rel="noopener"
+                  rel="noopener noreferrer"
                   variant="gold-outline"
                 >
                   Quero esse!

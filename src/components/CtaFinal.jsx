@@ -24,7 +24,7 @@ export default function CtaFinal() {
         <Button
           href={waLink('Olá! Gostaria de fazer uma encomenda na Doces da Ale 🍫')}
           target="_blank"
-          rel="noopener"
+          rel="noopener noreferrer"
           size="lg"
           pulse
         >
