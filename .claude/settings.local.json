@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la --time-style=full-iso /c/Users/victo/AppData/Local/Temp/33e276fe-78cd-4112-96e4-23fb75e8b2a5.png /c/Users/victo/AppData/Local/Temp/701e5faa-64fc-4322-aa69-3f92c4940088.png /c/Users/victo/AppData/Local/Temp/7d8c4460-067e-48e1-836a-6c0ed2306b66.png /c/Users/victo/AppData/Local/Temp/cc9b6ff6-240e-4ae4-a0d1-bcdcf4e3467e.png)",
+      "Read(//c/Users/victo/AppData/Local/Temp/**)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" \"https://images.unsplash.com/photo-1606312619070-d48b4c652a52?w=400&q=60\" --max-time 10)",
+      "Bash(mkdir -p \"c:/Users/victo/site-doces-mae/css\" \"c:/Users/victo/site-doces-mae/js\" \"c:/Users/victo/site-doces-mae/img\")",
+      "Bash(node --check \"c:/Users/victo/site-doces-mae/js/main.js\")",
+      "Bash(node -e ' *)",
+      "Bash(node C:/tmp/sample-pixels.js)",
+      "Bash(node C:/tmp/sample-pixels2.js)",
+      "Bash(node C:/tmp/crop-test3.js)",
+      "Bash(node C:/tmp/sample-row.js)",
+      "Bash(node C:/tmp/crop-test4.js)",
+      "Bash(node C:/tmp/crop-test5.js)",
+      "Bash(node C:/tmp/save-final-icon.js)",
+      "Skill(run)",
+      "Skill(run:*)",
+      "WebSearch",
+      "WebFetch(domain:unsplash.com)",
+      "WebFetch(domain:www.pexels.com)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\victo\\site-doces-mae"
+    ]
+  }
+}
