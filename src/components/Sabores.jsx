@@ -16,9 +16,7 @@ export default function Sabores() {
           <ul className="flex flex-col gap-4">
             {FLAVORS.map((flavor) => (
               <li key={flavor} className="flex items-center gap-3 text-[1.15rem] text-cream">
-                <span className="text-gold" aria-hidden="true">
-                  &#10070;
-                </span>
+                <span className="h-2 w-2 flex-shrink-0 rounded-full bg-gold" aria-hidden="true" />
                 {flavor}
               </li>
             ))}
@@ -29,7 +27,13 @@ export default function Sabores() {
           <span className="absolute -top-3 right-10 text-xl text-gold opacity-70" aria-hidden="true">
             &#10022;
           </span>
+          <span className="absolute top-10 left-4 text-sm text-gold opacity-40" aria-hidden="true">
+            &#10022;
+          </span>
           <span className="absolute bottom-16 left-2 text-base text-gold opacity-50" aria-hidden="true">
+            &#10022;
+          </span>
+          <span className="absolute bottom-28 right-4 text-xs text-gold opacity-40" aria-hidden="true">
             &#10022;
           </span>
           <img

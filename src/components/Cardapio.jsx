@@ -79,7 +79,7 @@ export default function Cardapio() {
             <FadeIn
               key={item.title}
               as="article"
-              className="group overflow-hidden rounded-site border border-gold/15 bg-bg-dark shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-lg"
+              className="group overflow-hidden rounded-site border border-gold/15 bg-bg-dark shadow-sm transition-all duration-300 hover:-translate-y-2 hover:border-gold/50 hover:shadow-[0_20px_45px_rgba(201,169,110,0.18)]"
             >
               <div className="relative aspect-square overflow-hidden">
                 {item.local ? (
@@ -99,16 +99,20 @@ export default function Cardapio() {
                     className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.08]"
                   />
                 )}
+                <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-bg-dark to-transparent" />
               </div>
               <div className="px-[26px] pb-[30px] pt-[26px]">
                 <h3 className="mb-2 text-[1.3rem] text-white">{item.title}</h3>
                 <p className="mb-3.5 text-[0.95rem] text-cream">{item.description}</p>
-                <span className="block text-[1rem] font-bold text-gold">{item.price}</span>
+                <span className="mb-4 inline-block rounded-full bg-gold/15 px-4 py-1 text-[0.9rem] font-bold text-gold">
+                  {item.price}
+                </span>
                 <Button
                   href={waLink(item.waMessage)}
                   target="_blank"
                   rel="noopener noreferrer"
                   variant="gold-outline"
+                  className="w-full text-center"
                 >
                   Quero esse!
                 </Button>

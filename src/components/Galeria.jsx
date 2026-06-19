@@ -108,7 +108,7 @@ export default function Galeria() {
             <FadeIn key={item.alt} className={item.tall ? 'row-span-2' : ''}>
               <button
                 onClick={() => setSelected(item)}
-                className="group relative block h-full w-full overflow-hidden rounded-2xl"
+                className="group relative block h-full w-full overflow-hidden rounded-2xl border border-gold/15 transition-colors duration-300 hover:border-gold/50"
               >
                 {item.local ? (
                   <ImageWithFallback

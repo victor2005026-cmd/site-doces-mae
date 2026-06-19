@@ -19,6 +19,31 @@ export default function CtaFinal() {
         ))}
       </div>
 
+      <img
+        src="/images/sabores-2.jpg"
+        alt=""
+        aria-hidden="true"
+        className="absolute left-[6%] top-[12%] hidden h-[88px] w-[88px] -rotate-6 rounded-full border-2 border-gold/70 object-cover shadow-lg min-[992px]:block"
+      />
+      <img
+        src="/images/cardapio-doces-finos.jpg"
+        alt=""
+        aria-hidden="true"
+        className="absolute right-[8%] top-[16%] hidden h-[76px] w-[76px] rotate-6 rounded-full border-2 border-gold/70 object-cover shadow-lg min-[992px]:block"
+      />
+      <img
+        src="/images/galeria-tradicional.jpg"
+        alt=""
+        aria-hidden="true"
+        className="absolute bottom-[14%] left-[10%] hidden h-[76px] w-[76px] rotate-6 rounded-full border-2 border-gold/70 object-cover shadow-lg min-[992px]:block"
+      />
+      <img
+        src="/images/galeria-decoracao.jpg"
+        alt=""
+        aria-hidden="true"
+        className="absolute bottom-[10%] right-[6%] hidden h-[88px] w-[88px] -rotate-6 rounded-full border-2 border-gold/70 object-cover shadow-lg min-[992px]:block"
+      />
+
       <FadeIn className="relative z-[2] mx-auto max-w-[640px] px-6">
         <span className="mb-7 inline-block rounded-full border border-gold/40 bg-bg-dark-alt px-6 py-2 text-[0.85rem] font-bold uppercase tracking-[2px] text-gold">
           Que tal um brigadeiro?
