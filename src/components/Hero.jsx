@@ -5,14 +5,14 @@ export default function Hero() {
   return (
     <section id="hero" className="relative flex min-h-screen items-center overflow-hidden bg-black">
       <img
-        src="/images/hero-chocolate.jpg"
-        alt="Brigadeiros e doces de chocolate artesanais da Doces da Ale, fotografia gastronômica em fundo escuro"
+        src="/images/hero-trufas.jpg"
+        alt="Brigadeiros e trufas artesanais polvilhados com cacau, fotografia gastronômica em fundo escuro"
         fetchpriority="high"
         className="absolute inset-0 h-full w-full object-cover"
       />
-      <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-black/55 to-black/90" />
+      <div className="absolute inset-0 bg-black/50" />
 
-      <div className="relative z-[2] ml-auto w-full max-w-[560px] px-6 py-28 sm:px-10 lg:pr-20">
+      <div className="relative z-[2] mx-auto w-full max-w-[720px] px-6 text-center">
         <p
           className="mb-4 text-[0.8rem] font-bold uppercase tracking-[3px] text-gold opacity-0 animate-fadeUp"
           style={{ animationDelay: '0.1s' }}
@@ -26,7 +26,7 @@ export default function Hero() {
           Doces Artesanais. Feitos com Amor. <span className="text-gold">Sabor Inesquecível.</span>
         </h1>
         <p
-          className="mb-9 max-w-[440px] text-[1.05rem] text-[#F0E4D3] opacity-0 animate-fadeUp"
+          className="mx-auto mb-9 max-w-[440px] text-[1.05rem] text-[#F0E4D3] opacity-0 animate-fadeUp"
           style={{ animationDelay: '0.4s' }}
         >
           Brigadeiros gourmet e doces finos artesanais em Santos e região
