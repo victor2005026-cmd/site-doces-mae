@@ -15,6 +15,9 @@ module.exports = {
           dark: '#B08A52',
         },
         rose: '#D4A5A5',
+        'bg-dark': '#2B1810',
+        'bg-dark-alt': '#241008',
+        cream: '#F0E4D3',
       },
       fontFamily: {
         title: ['"Playfair Display"', 'serif'],

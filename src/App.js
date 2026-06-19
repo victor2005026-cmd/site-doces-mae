@@ -1,5 +1,6 @@
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
+import Sabores from './components/Sabores';
 import Cardapio from './components/Cardapio';
 import Galeria from './components/Galeria';
 import Depoimentos from './components/Depoimentos';
@@ -20,6 +21,7 @@ export default function App() {
 
       <main id="main-content">
         <Hero />
+        <Sabores />
         <Cardapio />
         <Galeria />
         <Depoimentos />

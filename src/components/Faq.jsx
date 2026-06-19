@@ -29,9 +29,9 @@ export default function Faq() {
   const panelRefs = useRef([]);
 
   return (
-    <section id="faq" className="bg-bg-secondary py-[clamp(60px,10vw,120px)]">
+    <section id="faq" className="bg-bg-dark-alt py-[clamp(60px,10vw,120px)]">
       <div className="container-site container-site--narrow">
-        <FadeIn as="h2" className="mb-14 text-center font-title text-[clamp(2rem,4vw,2.8rem)] text-text-primary">
+        <FadeIn as="h2" className="mb-14 text-center font-title text-[clamp(2rem,4vw,2.8rem)] text-white">
           Perguntas Frequentes
         </FadeIn>
 
@@ -39,11 +39,11 @@ export default function Faq() {
           {FAQS.map((faq, index) => {
             const isOpen = openIndex === index;
             return (
-              <FadeIn key={faq.question} className="mb-3.5 overflow-hidden rounded-xl bg-white shadow-sm">
+              <FadeIn key={faq.question} className="mb-3.5 overflow-hidden rounded-xl border border-gold/15 bg-bg-dark shadow-sm">
                 <button
                   onClick={() => setOpenIndex(isOpen ? null : index)}
                   aria-expanded={isOpen}
-                  className="flex w-full items-center justify-between px-[26px] py-5 text-left font-title text-[1.05rem] font-semibold text-text-primary"
+                  className="flex w-full items-center justify-between px-[26px] py-5 text-left font-title text-[1.05rem] font-semibold text-white"
                 >
                   <span>{faq.question}</span>
                   <span
@@ -60,7 +60,7 @@ export default function Faq() {
                   className="overflow-hidden transition-[max-height] duration-300 ease-in-out"
                   style={{ maxHeight: isOpen ? `${panelRefs.current[index]?.scrollHeight ?? 0}px` : '0px' }}
                 >
-                  <p className="px-[26px] pb-[22px] text-text-secondary">{faq.answer}</p>
+                  <p className="px-[26px] pb-[22px] text-cream">{faq.answer}</p>
                 </div>
               </FadeIn>
             );

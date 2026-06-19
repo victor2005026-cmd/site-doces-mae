@@ -8,9 +8,9 @@ const STEPS = [
 
 export default function ComoFunciona() {
   return (
-    <section id="como-funciona" className="bg-bg-main py-12">
+    <section id="como-funciona" className="bg-bg-dark py-12">
       <div className="container-site">
-        <FadeIn as="h2" className="mb-8 text-center font-title text-[clamp(1.5rem,3vw,2rem)] text-text-primary">
+        <FadeIn as="h2" className="mb-8 text-center font-title text-[clamp(1.5rem,3vw,2rem)] text-white">
           Pedir é simples
         </FadeIn>
 
@@ -20,12 +20,12 @@ export default function ComoFunciona() {
               key={step.title}
               className="flex items-center gap-4 min-[992px]:flex-col min-[992px]:text-center"
             >
-              <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full border-2 border-gold bg-white text-[1.5rem] shadow-sm">
+              <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full border-2 border-gold bg-bg-dark-alt text-[1.5rem] shadow-sm">
                 <span aria-hidden="true">{step.icon}</span>
               </div>
               <div>
-                <h3 className="text-[1.05rem]">{step.title}</h3>
-                <p className="text-[0.9rem] text-text-secondary">{step.text}</p>
+                <h3 className="text-[1.05rem] text-white">{step.title}</h3>
+                <p className="text-[0.9rem] text-cream">{step.text}</p>
               </div>
             </FadeIn>
           ))}

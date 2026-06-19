@@ -65,12 +65,12 @@ const ITEMS = [
 
 export default function Cardapio() {
   return (
-    <section id="cardapio" className="bg-bg-secondary py-[clamp(60px,10vw,120px)]">
+    <section id="cardapio" className="bg-bg-dark-alt py-[clamp(60px,10vw,120px)]">
       <div className="container-site">
-        <FadeIn as="h2" className="text-center font-title text-[clamp(2rem,4vw,2.8rem)] text-text-primary mb-3.5">
+        <FadeIn as="h2" className="text-center font-title text-[clamp(2rem,4vw,2.8rem)] text-white mb-3.5">
           Nossos Doces
         </FadeIn>
-        <FadeIn as="p" className="mb-14 text-center text-[1.1rem] text-text-secondary">
+        <FadeIn as="p" className="mb-14 text-center text-[1.1rem] text-cream">
           Cada sabor é uma experiência única
         </FadeIn>
 
@@ -79,7 +79,7 @@ export default function Cardapio() {
             <FadeIn
               key={item.title}
               as="article"
-              className="group overflow-hidden rounded-site bg-white shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-lg"
+              className="group overflow-hidden rounded-site border border-gold/15 bg-bg-dark shadow-sm transition-all duration-300 hover:-translate-y-2 hover:shadow-lg"
             >
               <div className="relative aspect-square overflow-hidden">
                 {item.local ? (
@@ -101,9 +101,9 @@ export default function Cardapio() {
                 )}
               </div>
               <div className="px-[26px] pb-[30px] pt-[26px]">
-                <h3 className="mb-2 text-[1.3rem]">{item.title}</h3>
-                <p className="mb-3.5 text-[0.95rem] text-text-secondary">{item.description}</p>
-                <span className="block text-[1rem] font-bold text-gold-dark">{item.price}</span>
+                <h3 className="mb-2 text-[1.3rem] text-white">{item.title}</h3>
+                <p className="mb-3.5 text-[0.95rem] text-cream">{item.description}</p>
+                <span className="block text-[1rem] font-bold text-gold">{item.price}</span>
                 <Button
                   href={waLink(item.waMessage)}
                   target="_blank"

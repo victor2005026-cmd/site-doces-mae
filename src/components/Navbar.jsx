@@ -30,7 +30,7 @@ export default function Navbar() {
       <header
         id="navbar"
         className={`fixed top-0 left-0 right-0 z-[1000] transition-all duration-300 ${
-          scrolled ? 'bg-[rgba(253,248,240,0.85)] backdrop-blur-md shadow-sm py-[10px]' : 'py-4'
+          scrolled ? 'bg-[rgba(31,17,9,0.92)] backdrop-blur-md shadow-sm py-[10px]' : 'py-4'
         }`}
       >
         <div className="max-w-site mx-auto flex items-center justify-between gap-5 px-6">
@@ -50,19 +50,12 @@ export default function Navbar() {
               <span key={link.href} className="flex items-center gap-5">
                 <a
                   href={link.href}
-                  className={`group relative py-1.5 text-[0.95rem] font-bold transition-colors duration-300 hover:text-gold ${
-                    scrolled ? 'text-text-secondary' : 'text-white'
-                  }`}
+                  className="group relative py-1.5 text-[0.95rem] font-bold text-white transition-colors duration-300 hover:text-gold"
                 >
                   {link.label}
                   <span className="absolute bottom-0 left-0 h-[2px] w-0 bg-gold transition-all duration-300 group-hover:w-full" />
                 </a>
-                {index < NAV_LINKS.length - 1 && (
-                  <span
-                    aria-hidden="true"
-                    className={`h-4 w-px ${scrolled ? 'bg-text-secondary/30' : 'bg-white/40'}`}
-                  />
-                )}
+                {index < NAV_LINKS.length - 1 && <span aria-hidden="true" className="h-4 w-px bg-white/40" />}
               </span>
             ))}
           </nav>
@@ -84,9 +77,9 @@ export default function Navbar() {
             aria-controls="mobile-sidebar"
             className="flex min-[992px]:hidden h-6 w-[30px] flex-col justify-center gap-1.5"
           >
-            <span className={`block h-[2px] w-full transition-colors duration-300 ${scrolled ? 'bg-text-primary' : 'bg-white'}`} />
-            <span className={`block h-[2px] w-full transition-colors duration-300 ${scrolled ? 'bg-text-primary' : 'bg-white'}`} />
-            <span className={`block h-[2px] w-full transition-colors duration-300 ${scrolled ? 'bg-text-primary' : 'bg-white'}`} />
+            <span className="block h-[2px] w-full bg-white" />
+            <span className="block h-[2px] w-full bg-white" />
+            <span className="block h-[2px] w-full bg-white" />
           </button>
         </div>
       </header>

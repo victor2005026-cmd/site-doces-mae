@@ -97,12 +97,12 @@ export default function Galeria() {
   }, [selected]);
 
   return (
-    <section id="galeria" className="bg-bg-main py-[clamp(60px,10vw,120px)]">
+    <section id="galeria" className="bg-bg-dark py-[clamp(60px,10vw,120px)]">
       <div className="container-site">
-        <FadeIn as="h2" className="mb-3.5 text-center font-title text-[clamp(2rem,4vw,2.8rem)] text-text-primary">
+        <FadeIn as="h2" className="mb-3.5 text-center font-title text-[clamp(2rem,4vw,2.8rem)] text-white">
           Momentos Doces
         </FadeIn>
-        <FadeIn as="p" className="mb-14 text-center text-[1.1rem] text-text-secondary">
+        <FadeIn as="p" className="mb-14 text-center text-[1.1rem] text-cream">
           Um pouco do nosso carinho em cada detalhe
         </FadeIn>
 

@@ -13,14 +13,14 @@ export default function MobileSidebar({ isOpen, onClose, links }) {
       <aside
         id="mobile-sidebar"
         aria-label="Menu mobile"
-        className={`fixed top-0 right-0 h-full w-[min(320px,80vw)] bg-bg-main z-[1200] px-8 pt-20 pb-8 shadow-lg transition-transform duration-[400ms] ease-[cubic-bezier(0.65,0,0.35,1)] ${
+        className={`fixed top-0 right-0 h-full w-[min(320px,80vw)] bg-bg-dark z-[1200] px-8 pt-20 pb-8 shadow-lg transition-transform duration-[400ms] ease-[cubic-bezier(0.65,0,0.35,1)] ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         <button
           onClick={onClose}
           aria-label="Fechar menu"
-          className="absolute top-6 right-6 text-[2rem] leading-none text-text-primary"
+          className="absolute top-6 right-6 text-[2rem] leading-none text-white"
         >
           &times;
         </button>
@@ -30,7 +30,7 @@ export default function MobileSidebar({ isOpen, onClose, links }) {
               key={link.href}
               href={link.href}
               onClick={onClose}
-              className="font-title text-[1.2rem] font-semibold text-text-primary"
+              className="font-title text-[1.2rem] font-semibold text-white"
             >
               {link.label}
             </a>

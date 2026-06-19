@@ -20,9 +20,9 @@ const TESTIMONIALS = [
 
 export default function Depoimentos() {
   return (
-    <section id="depoimentos" className="bg-bg-secondary py-[clamp(60px,10vw,120px)]">
+    <section id="depoimentos" className="bg-bg-dark-alt py-[clamp(60px,10vw,120px)]">
       <div className="container-site">
-        <FadeIn as="h2" className="mb-14 text-center font-title text-[clamp(2rem,4vw,2.8rem)] text-text-primary">
+        <FadeIn as="h2" className="mb-14 text-center font-title text-[clamp(2rem,4vw,2.8rem)] text-white">
           O que dizem nossos clientes
         </FadeIn>
 
@@ -31,7 +31,7 @@ export default function Depoimentos() {
             <FadeIn
               key={t.name}
               as="article"
-              className="rounded-site bg-white px-7 py-9 text-center shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-md"
+              className="rounded-site border border-gold/15 bg-bg-dark px-7 py-9 text-center shadow-sm transition-all duration-300 hover:-translate-y-1.5 hover:shadow-md"
             >
               <div className="relative mx-auto mb-4 h-[72px] w-[72px] overflow-hidden rounded-full border-[3px] border-gold">
                 <img
@@ -44,8 +44,8 @@ export default function Depoimentos() {
               <div className="mb-3.5 tracking-[2px] text-gold" aria-label="Avaliação 5 de 5 estrelas">
                 ★★★★★
               </div>
-              <p className="mb-4 italic text-text-secondary">&ldquo;{t.text}&rdquo;</p>
-              <p className="font-bold text-text-primary">{t.name}</p>
+              <p className="mb-4 italic text-cream">&ldquo;{t.text}&rdquo;</p>
+              <p className="font-bold text-white">{t.name}</p>
             </FadeIn>
           ))}
         </div>
