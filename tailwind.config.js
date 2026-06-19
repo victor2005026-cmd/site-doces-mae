@@ -14,7 +14,10 @@ module.exports = {
           DEFAULT: '#C9A96E',
           dark: '#B08A52',
         },
-        rose: '#D4A5A5',
+        rose: {
+          DEFAULT: '#E8B4C0',
+          dark: '#D98FA1',
+        },
         'bg-dark': '#2B1810',
         'bg-dark-alt': '#241008',
         cream: '#F0E4D3',

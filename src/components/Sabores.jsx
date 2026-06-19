@@ -38,19 +38,19 @@ export default function Sabores() {
           </span>
           <img
             src="/images/sabores-1.jpg"
-            alt="Brigadeiros variados: tradicional, coco e confete colorido"
+            alt="Brigadeiros decorados com confete verde e amarelo"
             loading="lazy"
             className="mx-auto h-[230px] w-[230px] rounded-full border-4 border-gold/40 object-cover shadow-lg sm:h-[260px] sm:w-[260px]"
           />
           <img
             src="/images/sabores-2.jpg"
-            alt="Brigadeiros de paçoca crocante"
+            alt="Brigadeiros de leite ninho personalizados com desenho dourado"
             loading="lazy"
             className="absolute -bottom-2 left-0 h-[130px] w-[130px] rounded-full border-4 border-gold/40 object-cover shadow-lg sm:h-[150px] sm:w-[150px]"
           />
           <img
             src="/images/sabores-3.jpg"
-            alt="Brigadeiros de pistache em confete verde"
+            alt="Brigadeiros personalizados em tons rosa e azul"
             loading="lazy"
             className="absolute -bottom-2 right-0 h-[130px] w-[130px] rounded-full border-4 border-gold/40 object-cover shadow-lg sm:h-[150px] sm:w-[150px]"
           />
