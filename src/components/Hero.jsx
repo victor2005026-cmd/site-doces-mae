@@ -3,16 +3,16 @@ import { waLink } from '../lib/whatsapp';
 
 export default function Hero() {
   return (
-    <section id="hero" className="relative flex min-h-screen items-center justify-center overflow-hidden">
+    <section id="hero" className="relative flex min-h-screen items-center overflow-hidden bg-black">
       <img
-        src="/images/hero-brigadeiros.jpg"
-        alt="Pó de cacau caindo sobre doces artesanais da Doces da Ale"
+        src="/images/hero-chocolate.jpg"
+        alt="Brigadeiros e doces de chocolate artesanais da Doces da Ale, fotografia gastronômica em fundo escuro"
         fetchpriority="high"
         className="absolute inset-0 h-full w-full object-cover"
       />
-      <div className="absolute inset-0 bg-gradient-to-b from-[rgba(20,12,8,0.8)] via-[rgba(20,12,8,0.55)] via-50% to-[rgba(20,12,8,0.88)]" />
+      <div className="absolute inset-0 bg-gradient-to-r from-black/10 via-black/55 to-black/90" />
 
-      <div className="relative z-[2] max-w-[800px] px-6 text-center text-white">
+      <div className="relative z-[2] ml-auto w-full max-w-[560px] px-6 py-28 sm:px-10 lg:pr-20">
         <p
           className="mb-4 text-[0.8rem] font-bold uppercase tracking-[3px] text-gold opacity-0 animate-fadeUp"
           style={{ animationDelay: '0.1s' }}
@@ -20,38 +20,26 @@ export default function Hero() {
           Confeitaria Artesanal &middot; Santos/SP
         </p>
         <h1
-          className="mb-[18px] font-title text-[clamp(2.8rem,8vw,5.5rem)] [text-shadow:0_4px_24px_rgba(0,0,0,0.35)] opacity-0 animate-fadeUp"
+          className="mb-5 font-title text-[clamp(2.2rem,4.5vw,3.4rem)] leading-[1.15] text-white [text-shadow:0_4px_24px_rgba(0,0,0,0.45)] opacity-0 animate-fadeUp"
           style={{ animationDelay: '0.25s' }}
         >
-          Doces da Ale
+          Doces Artesanais. Feitos com Amor. <span className="text-gold">Sabor Inesquecível.</span>
         </h1>
         <p
-          className="mx-auto mb-3 max-w-[640px] font-title text-[clamp(1.2rem,2.6vw,1.7rem)] italic opacity-0 animate-fadeUp"
+          className="mb-9 max-w-[440px] text-[1.05rem] text-[#F0E4D3] opacity-0 animate-fadeUp"
           style={{ animationDelay: '0.4s' }}
-        >
-          Doces feitos com amor para transformar momentos em lembranças inesquecíveis
-        </p>
-        <p
-          className="mb-9 text-[1.05rem] text-[#F0E4D3] opacity-0 animate-fadeUp"
-          style={{ animationDelay: '0.55s' }}
         >
           Brigadeiros gourmet e doces finos artesanais em Santos e região
         </p>
-        <div
-          className="flex flex-wrap justify-center gap-[18px] opacity-0 animate-fadeUp max-[600px]:flex-col max-[600px]:w-full"
-          style={{ animationDelay: '0.7s' }}
-        >
+        <div className="opacity-0 animate-fadeUp" style={{ animationDelay: '0.55s' }}>
           <Button
             href={waLink('Olá! Gostaria de fazer uma encomenda na Doces da Ale 🍫')}
             target="_blank"
             rel="noopener noreferrer"
+            variant="outline-gold"
             size="lg"
-            className="max-[600px]:w-full"
           >
-            Fazer Encomenda pelo WhatsApp
-          </Button>
-          <Button href="#cardapio" variant="outline" size="lg" className="max-[600px]:w-full">
-            Ver Cardápio
+            Fazer Encomenda
           </Button>
         </div>
       </div>

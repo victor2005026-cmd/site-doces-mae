@@ -39,7 +39,7 @@ export default function Navbar() {
             className="flex items-center gap-2.5 transition-colors duration-300"
             aria-label="Doces da Ale - Início"
           >
-            <span className="relative h-12 w-12 sm:h-14 sm:w-14 flex-shrink-0 overflow-hidden rounded-full shadow-sm">
+            <span className="relative h-9 w-9 sm:h-10 sm:w-10 flex-shrink-0 overflow-hidden rounded-full">
               <img src="/images/logo-icon.png" alt="Doces da Ale" className="h-full w-full object-cover" />
             </span>
             <span className="font-script text-[1.9rem] leading-none text-gold">Doces da Ale</span>

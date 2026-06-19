@@ -3,6 +3,8 @@ const VARIANTS = {
   'gold-outline':
     'block mt-[18px] bg-transparent border-2 border-gold text-text-primary px-6 py-3 hover:bg-gold hover:-translate-y-[2px]',
   outline: 'border-2 border-white text-white bg-transparent hover:bg-white/15 hover:-translate-y-[3px]',
+  'outline-gold':
+    'border-2 border-gold text-gold bg-transparent hover:bg-gold hover:text-text-primary hover:-translate-y-[3px]',
 };
 
 export default function Button({

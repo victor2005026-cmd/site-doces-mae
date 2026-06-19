@@ -3,7 +3,7 @@ import App from './App';
 
 test('renderiza o titulo principal do Hero', () => {
   render(<App />);
-  const heading = screen.getByRole('heading', { name: /doces da ale/i, level: 1 });
+  const heading = screen.getByRole('heading', { name: /sabor inesquecível/i, level: 1 });
   expect(heading).toBeInTheDocument();
 });
 
