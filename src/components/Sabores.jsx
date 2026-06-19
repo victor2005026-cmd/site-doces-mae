@@ -1,13 +1,6 @@
 import FadeIn from './FadeIn';
 
-const FLAVORS = [
-  'Maracujá',
-  'Leite Ninho',
-  'Tradicional',
-  'Paçoca',
-  'Romeu e Julieta',
-  'Brigadeiros Personalizados',
-];
+const FLAVORS = ['Nesquik', 'Leite Ninho', 'Tradicional', 'Paçoca', 'Romeu e Julieta', 'Brigadeiros Personalizados'];
 
 export default function Sabores() {
   return (
@@ -32,24 +25,30 @@ export default function Sabores() {
           </ul>
         </FadeIn>
 
-        <FadeIn className="relative mx-auto grid w-full max-w-[440px] grid-cols-2 gap-4">
+        <FadeIn className="relative mx-auto w-full max-w-[420px] pb-12">
+          <span className="absolute -top-3 right-10 text-xl text-gold opacity-70" aria-hidden="true">
+            &#10022;
+          </span>
+          <span className="absolute bottom-16 left-2 text-base text-gold opacity-50" aria-hidden="true">
+            &#10022;
+          </span>
           <img
             src="/images/sabores-1.jpg"
             alt="Brigadeiros variados: tradicional, coco e confete colorido"
             loading="lazy"
-            className="col-span-2 h-[220px] w-full rounded-2xl border border-gold/30 object-cover shadow-lg"
+            className="mx-auto h-[230px] w-[230px] rounded-full border-4 border-gold/40 object-cover shadow-lg sm:h-[260px] sm:w-[260px]"
           />
           <img
             src="/images/sabores-2.jpg"
             alt="Brigadeiros de paçoca crocante"
             loading="lazy"
-            className="h-[160px] w-full rounded-2xl border border-gold/30 object-cover shadow-lg"
+            className="absolute -bottom-2 left-0 h-[130px] w-[130px] rounded-full border-4 border-gold/40 object-cover shadow-lg sm:h-[150px] sm:w-[150px]"
           />
           <img
             src="/images/sabores-3.jpg"
-            alt="Brigadeiros personalizados em formato de grade"
+            alt="Brigadeiros de pistache em confete verde"
             loading="lazy"
-            className="h-[160px] w-full rounded-2xl border border-gold/30 object-cover shadow-lg"
+            className="absolute -bottom-2 right-0 h-[130px] w-[130px] rounded-full border-4 border-gold/40 object-cover shadow-lg sm:h-[150px] sm:w-[150px]"
           />
         </FadeIn>
       </div>
