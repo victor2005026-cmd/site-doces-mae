@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import BrigadeiroIcon from './icons/BrigadeiroIcon';
 import MobileSidebar from './MobileSidebar';
 import Button from './Button';
 import { waLink } from '../lib/whatsapp';
@@ -41,7 +40,7 @@ export default function Navbar() {
             aria-label="Doces da Ale - Início"
           >
             <span className="relative h-12 w-12 sm:h-14 sm:w-14 flex-shrink-0 overflow-hidden rounded-full shadow-sm">
-              <BrigadeiroIcon className="h-full w-full" />
+              <img src="/images/logo.png" alt="Doces da Ale" className="h-full w-full scale-150 object-cover object-top" />
             </span>
             <span
               className={`font-script text-[1.9rem] leading-none transition-colors duration-300 ${

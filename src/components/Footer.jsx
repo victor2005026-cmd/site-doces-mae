@@ -1,4 +1,3 @@
-import BrigadeiroIcon from './icons/BrigadeiroIcon';
 import { waLink } from '../lib/whatsapp';
 
 export default function Footer() {
@@ -7,7 +6,7 @@ export default function Footer() {
       <div className="container-site grid grid-cols-1 gap-8 border-b border-white/10 pb-[50px] min-[601px]:grid-cols-2 min-[992px]:grid-cols-[1.4fr_1fr_1fr_1fr] min-[992px]:gap-10">
         <div className="flex flex-col items-start gap-2.5">
           <span className="h-12 w-12 flex-shrink-0 overflow-hidden rounded-full border-2 border-gold">
-            <BrigadeiroIcon className="h-full w-full" />
+            <img src="/images/logo.png" alt="Doces da Ale" className="h-full w-full scale-150 object-cover object-top" />
           </span>
           <span className="font-title text-[1.3rem] text-white">Doces da Ale</span>
           <p className="font-script text-[1.3rem] text-gold">Doces artesanais feitos com amor</p>
