@@ -5,12 +5,12 @@ export default function Hero() {
   return (
     <section id="hero" className="relative flex min-h-screen items-center overflow-hidden bg-black">
       <img
-        src="/images/hero-trufas.jpg"
-        alt="Brigadeiros e trufas artesanais polvilhados com cacau, fotografia gastronômica em fundo escuro"
+        src="/images/hero-cacau.jpg"
+        alt="Cacau em pó sendo polvilhado sobre doce artesanal, fotografia gastronômica em fundo preto"
         fetchpriority="high"
         className="absolute inset-0 h-full w-full object-cover"
       />
-      <div className="absolute inset-0 bg-black/50" />
+      <div className="absolute inset-0 bg-black/60" />
 
       <div className="relative z-[2] mx-auto w-full max-w-[720px] px-6 text-center">
         <p
