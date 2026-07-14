@@ -18,7 +18,12 @@
       "Skill(run:*)",
       "WebSearch",
       "WebFetch(domain:unsplash.com)",
-      "WebFetch(domain:www.pexels.com)"
+      "WebFetch(domain:www.pexels.com)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\victo\\\\site-doces-mae\\\\src\\\\components\\\\Navbar.jsx\", \"C:\\\\Users\\\\victo\\\\site-doces-mae\\\\src\\\\components\\\\MobileSidebar.jsx\" | Select-Object Name, @{Name=\"Exists\";Expression={$_.Exists}})",
+      "PowerShell(Get-Process -Id 18248)",
+      "PowerShell(Stop-Process -Id 18248 -Force)",
+      "PowerShell(Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue })",
+      "PowerShell(Get-NetTCPConnection -LocalPort 3000 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty OwningProcess -Unique | ForEach-Object { Get-Process -Id $_ | Select-Object Id, ProcessName, StartTime; Stop-Process -Id $_ -Force -ErrorAction SilentlyContinue })"
     ],
     "additionalDirectories": [
       "c:\\Users\\victo\\site-doces-mae"

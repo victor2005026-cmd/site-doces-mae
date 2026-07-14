@@ -6,35 +6,36 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        'bg-main': '#FDF8F0',
-        'bg-secondary': '#F5EDE3',
-        'text-primary': '#3C2415',
-        'text-secondary': '#6B4F3A',
+        'bg-main': '#FFFFFF',
+        'bg-alt': '#FAF7F2',
+        'text-primary': '#333333',
+        'text-secondary': '#888888',
         gold: {
           DEFAULT: '#C9A96E',
           dark: '#B08A52',
         },
         rose: {
-          DEFAULT: '#E8B4C0',
-          dark: '#D98FA1',
+          DEFAULT: '#E8A0AB',
+          dark: '#D98497',
         },
-        'bg-dark': '#2B1810',
-        'bg-dark-alt': '#241008',
-        cream: '#F0E4D3',
+        border: {
+          light: '#E8E3DC',
+        },
+        success: '#2FA84F',
       },
       fontFamily: {
-        title: ['"Playfair Display"', 'serif'],
-        body: ['Lato', 'sans-serif'],
+        sans: ['Inter', 'sans-serif'],
+        heading: ['Poppins', 'sans-serif'],
         script: ['"Great Vibes"', 'cursive'],
       },
       boxShadow: {
-        sm: '0 2px 10px rgba(60, 36, 21, 0.08)',
-        DEFAULT: '0 2px 10px rgba(60, 36, 21, 0.08)',
-        md: '0 10px 30px rgba(60, 36, 21, 0.12)',
-        lg: '0 20px 50px rgba(60, 36, 21, 0.18)',
+        sm: '0 1px 3px rgba(0, 0, 0, 0.06)',
+        DEFAULT: '0 2px 8px rgba(0, 0, 0, 0.06)',
+        md: '0 6px 20px rgba(0, 0, 0, 0.08)',
+        lg: '0 10px 30px rgba(0, 0, 0, 0.12)',
       },
       borderRadius: {
-        site: '18px',
+        card: '12px',
       },
       maxWidth: {
         site: '1240px',
@@ -42,23 +43,17 @@ module.exports = {
       },
       keyframes: {
         fadeUp: {
-          '0%': { opacity: '0', transform: 'translateY(24px)' },
+          '0%': { opacity: '0', transform: 'translateY(16px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
-        scrollHint: {
-          '0%': { opacity: '1', top: '8px' },
-          '100%': { opacity: '0', top: '24px' },
-        },
-        waPulse: {
-          '0%': { boxShadow: '0 0 0 0 rgba(201, 169, 110, 0.55)' },
-          '70%': { boxShadow: '0 0 0 18px rgba(201, 169, 110, 0)' },
-          '100%': { boxShadow: '0 0 0 0 rgba(201, 169, 110, 0)' },
+        slideIn: {
+          '0%': { transform: 'translateX(100%)' },
+          '100%': { transform: 'translateX(0)' },
         },
       },
       animation: {
-        fadeUp: 'fadeUp 0.9s ease forwards',
-        scrollHint: 'scrollHint 1.8s infinite',
-        waPulse: 'waPulse 2.4s infinite',
+        fadeUp: 'fadeUp 0.5s ease forwards',
+        slideIn: 'slideIn 0.3s ease forwards',
       },
     },
   },

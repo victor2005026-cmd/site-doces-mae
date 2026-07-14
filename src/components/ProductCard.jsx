@@ -1,0 +1,46 @@
+import { formatPrice } from '../data/products';
+import { useCart } from '../context/CartContext';
+import { useImageSrc } from '../context/ImageOverridesContext';
+
+export default function ProductCard({ product }) {
+  const { addItem } = useCart();
+  const imageSrc = useImageSrc(product.id, product.image);
+
+  return (
+    <article className="group relative flex flex-col overflow-hidden rounded-card border border-border-light bg-bg-main transition-shadow duration-200 hover:shadow-md">
+      <div className="relative aspect-square overflow-hidden bg-bg-alt">
+        <img
+          src={imageSrc}
+          alt={product.alt}
+          loading="lazy"
+          className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+        />
+        {product.badge && (
+          <span className="absolute left-3 top-3 rounded-full bg-rose px-3 py-1 text-[0.7rem] font-semibold text-white shadow-sm">
+            {product.badge}
+          </span>
+        )}
+      </div>
+
+      <div className="flex flex-1 flex-col p-4">
+        <h3 className="font-heading text-[1.05rem] font-semibold text-text-primary">{product.name}</h3>
+        <p className="mt-1 line-clamp-1 text-[0.85rem] text-text-secondary">{product.description}</p>
+
+        <div className="mt-3 flex items-center justify-between">
+          <span className="text-[1.05rem] font-bold text-text-primary">{formatPrice(product.price)}</span>
+          <button
+            type="button"
+            onClick={() => addItem(product)}
+            aria-label={`Adicionar ${product.name} ao carrinho`}
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-rose text-white shadow-sm transition-transform hover:scale-110 hover:bg-rose-dark"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
