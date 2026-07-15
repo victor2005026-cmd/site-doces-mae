@@ -25,6 +25,7 @@ export default function AdminProductForm({ product, onClose }) {
       : { ...EMPTY }
   );
   const [imgError, setImgError] = useState('');
+  const [saving, setSaving] = useState(false);
   const imgInputId = useId();
 
   const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
@@ -43,7 +44,7 @@ export default function AdminProductForm({ product, onClose }) {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const data = {
       name: form.name.trim(),
@@ -51,14 +52,15 @@ export default function AdminProductForm({ product, onClose }) {
       price: parseFloat(form.price),
       category: form.category,
       image: form.image || '/images/prod-tradicional.jpg',
-      alt: form.alt.trim() || form.name.trim(),
-      ...(form.badge.trim() ? { badge: form.badge.trim() } : { badge: undefined }),
+      badge: form.badge.trim() || undefined,
       active: product ? product.active : true,
     };
-    if (isEdit) {
-      updateProduct(product.id, data);
-    } else {
-      addProduct(data);
+    setSaving(true);
+    const { error } = isEdit ? await updateProduct(product.id, data) : await addProduct(data);
+    setSaving(false);
+    if (error) {
+      setImgError('Não consegui salvar o produto. Tente de novo.');
+      return;
     }
     onClose();
   };
@@ -167,9 +169,10 @@ export default function AdminProductForm({ product, onClose }) {
           <div className="mt-2 flex gap-3">
             <button
               type="submit"
-              className="flex-1 rounded-full bg-rose py-2.5 text-[0.95rem] font-semibold text-white hover:bg-rose-dark"
+              disabled={saving}
+              className="flex-1 rounded-full bg-rose py-2.5 text-[0.95rem] font-semibold text-white hover:bg-rose-dark disabled:opacity-60"
             >
-              {isEdit ? 'Salvar alterações' : 'Adicionar produto'}
+              {saving ? 'Salvando...' : isEdit ? 'Salvar alterações' : 'Adicionar produto'}
             </button>
             <button
               type="button"

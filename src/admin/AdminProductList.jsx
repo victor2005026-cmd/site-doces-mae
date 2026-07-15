@@ -4,8 +4,14 @@ import { useAdminProducts } from '../context/AdminProductsContext';
 import AdminProductForm from './AdminProductForm';
 
 export default function AdminProductList() {
-  const { products, toggleActive } = useAdminProducts();
+  const { products, loading, toggleActive, toggleMostSold, deleteProduct } = useAdminProducts();
   const [editing, setEditing] = useState(null); // null | product | 'new'
+
+  const handleDelete = (product) => {
+    if (window.confirm(`Excluir "${product.name}"? Essa ação não pode ser desfeita.`)) {
+      deleteProduct(product.id);
+    }
+  };
 
   return (
     <div>
@@ -19,6 +25,10 @@ export default function AdminProductList() {
           + Novo produto
         </button>
       </div>
+
+      {loading && (
+        <p className="mb-3 text-[0.85rem] text-text-secondary">Carregando produtos...</p>
+      )}
 
       <ul className="rounded-card border border-border-light bg-bg-main">
         {products.map((product) => (
@@ -60,6 +70,17 @@ export default function AdminProductList() {
             <div className="flex flex-shrink-0 items-center gap-2">
               <button
                 type="button"
+                onClick={() => toggleMostSold(product.id)}
+                className={`rounded-full border px-3 py-1.5 text-[0.78rem] font-medium transition-colors ${
+                  product.mostSold
+                    ? 'border-rose bg-rose/15 text-rose-dark'
+                    : 'border-border-light text-text-secondary hover:border-rose hover:text-rose'
+                }`}
+              >
+                {product.mostSold ? '★ Mais vendido' : 'Marcar + vendido'}
+              </button>
+              <button
+                type="button"
                 onClick={() => toggleActive(product.id)}
                 className={`rounded-full border px-3 py-1.5 text-[0.78rem] font-medium transition-colors ${
                   product.active
@@ -75,6 +96,13 @@ export default function AdminProductList() {
                 className="rounded-full border border-border-light px-3 py-1.5 text-[0.78rem] font-medium text-text-primary hover:border-rose hover:text-rose"
               >
                 Editar
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDelete(product)}
+                className="rounded-full border border-border-light px-3 py-1.5 text-[0.78rem] font-medium text-rose-dark hover:border-rose-dark"
+              >
+                Excluir
               </button>
             </div>
           </li>

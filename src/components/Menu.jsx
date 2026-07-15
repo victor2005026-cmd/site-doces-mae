@@ -8,7 +8,7 @@ const GROUPS = CATEGORIES.filter((cat) => cat.id !== 'todos');
 const SCROLL_OFFSET = 140;
 
 export default function Menu({ query = '' }) {
-  const { activeProducts } = useAdminProducts();
+  const { activeProducts, loading } = useAdminProducts();
   const [active, setActive] = useState(GROUPS[0].id);
   const sectionRefs = useRef({});
   const normalizedQuery = query.trim().toLowerCase();
@@ -64,7 +64,11 @@ export default function Menu({ query = '' }) {
     <div id="cardapio">
       <CategoryBar categories={CATEGORIES} active={active} onSelect={scrollToCategory} />
 
-      {!hasResults && (
+      {loading && (
+        <p className="container-site py-10 text-center text-text-secondary">Carregando cardápio...</p>
+      )}
+
+      {!loading && !hasResults && (
         <p className="container-site py-10 text-center text-text-secondary">
           Nenhum produto encontrado pra essa busca.
         </p>
