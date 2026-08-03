@@ -1,10 +1,25 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useAdminProducts } from '../context/AdminProductsContext';
 import { formatPrice } from '../data/products';
+import { formatDiasLabel } from '../lib/storeHours';
+import { gerarLinkGoogleMaps } from '../lib/mapsLink';
+import { waLink } from '../lib/whatsapp';
+import { isoDateLocal as isoDate } from '../lib/dateUtils';
+import { notificarPedidoNovoPorEmail } from '../lib/emailNotificacao';
 import AuthModal from '../components/AuthModal';
+import Spinner from '../components/Spinner';
+import EnderecoAutocomplete from '../components/EnderecoAutocomplete';
+
+const ArrowLeftIcon = (props) => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" {...props}>
+    <path d="M19 12H5" />
+    <path d="M11 18l-6-6 6-6" />
+  </svg>
+);
 
 // ── Helpers ─────────────────────────────────────────────────
 
@@ -26,8 +41,19 @@ function addDias(date, dias) {
   return d;
 }
 
-function isoDate(d) {
-  return d.toISOString().split('T')[0];
+function normalizar(str) {
+  return (str ?? '').toString().trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+
+// Taxa final de entrega: base do bairro (resolvida em StepEntrega) + sobretaxa de chuva, se ativa.
+// Enquanto config.frete_ativo for false, a entrega em Santos é sempre grátis
+// (não busca taxa por bairro nem soma sobretaxa de chuva).
+function calcularTaxaEntrega(entrega, config) {
+  if (entrega?.tipo !== 'entrega') return 0;
+  if (!config?.frete_ativo) return 0;
+  const base = Number(entrega?.taxaBase ?? 0);
+  const chuva = config?.modo_chuva_ativo ? Number(config?.sobretaxa_chuva ?? 0) : 0;
+  return base + chuva;
 }
 
 const STATUS_PERIODOS = [
@@ -35,6 +61,10 @@ const STATUS_PERIODOS = [
   { id: 'tarde', label: 'Tarde', sub: '13h – 17h' },
   { id: 'noite', label: 'Noite', sub: '18h – 21h' },
 ];
+
+const FORMA_PAGAMENTO_LABELS = {
+  pix: 'Via Pix',
+};
 
 // ── Stepper ──────────────────────────────────────────────────
 
@@ -77,7 +107,7 @@ function Stepper({ current }) {
 // ── Etapa 1 — Identificação ──────────────────────────────────
 
 function StepIdentificacao({ onNext, setGuest }) {
-  const { user, primeiroNome } = useAuth();
+  const { user } = useAuth();
   const [showAuth, setShowAuth] = useState(false);
   const [guestForm, setGuestForm] = useState({ nome: '', tel: '', email: '' });
   const [modo, setModo] = useState(null); // 'login' | 'convidado'
@@ -134,6 +164,7 @@ function StepIdentificacao({ onNext, setGuest }) {
             <input
               required
               type="tel"
+              inputMode="numeric"
               value={formatarTelefone(guestForm.tel)}
               onChange={(e) => setGuestForm((p) => ({ ...p, tel: e.target.value }))}
               placeholder="(13) 99999-9999"
@@ -167,10 +198,61 @@ function StepIdentificacao({ onNext, setGuest }) {
 
 // ── Etapa 2 — Entrega ────────────────────────────────────────
 
-function StepEntrega({ config, onNext, onBack, setEntrega, entrega }) {
+function CardRetirada({ config }) {
+  const end = config?.endereco_retirada;
+  const horario = config?.horario_retirada?.abre ? config.horario_retirada : config?.horario_funcionamento;
+  const linkMaps = config?.link_google_maps || gerarLinkGoogleMaps(end);
+
+  const endLinhas = end
+    ? [
+        [end.rua, end.numero].filter(Boolean).join(', '),
+        end.complemento,
+        [end.bairro, end.cidade].filter(Boolean).join(' – '),
+        end.cep,
+        end.referencia ? `Referência: ${end.referencia}` : null,
+      ].filter(Boolean)
+    : [];
+
+  return (
+    <div className="rounded-card border border-border-light bg-bg-alt p-4">
+      <p className="mb-2 font-semibold text-text-primary">Endereço para retirada</p>
+      {endLinhas.length > 0 ? (
+        <div className="mb-3 text-[0.88rem] text-text-secondary">
+          {endLinhas.map((linha, i) => <p key={i}>{linha}</p>)}
+        </div>
+      ) : (
+        <p className="mb-3 text-[0.88rem] text-text-secondary">Consultar no WhatsApp</p>
+      )}
+
+      {horario?.abre && (
+        <p className="mb-3 text-[0.88rem] font-medium text-text-primary">
+          Retirada: {formatDiasLabel(horario.dias)}, {horario.abre} às {horario.fecha}
+        </p>
+      )}
+
+      {linkMaps && (
+        <a
+          href={linkMaps}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 rounded-full border border-rose/40 px-4 py-2 text-[0.85rem] font-medium text-rose-dark hover:border-rose"
+        >
+          Como chegar
+        </a>
+      )}
+    </div>
+  );
+}
+
+const ENDERECO_VAZIO = { cep: '', rua: '', numero: '', complemento: '', bairro: '', cidade: '', referencia: '' };
+
+function StepEntrega({ config, taxasEntrega, onNext, onBack, setEntrega, entrega }) {
+  const freteAtivo = Boolean(config?.frete_ativo);
   const [tipo, setTipo] = useState(entrega?.tipo ?? null);
-  const [end, setEnd] = useState(entrega?.endereco ?? { cep: '', rua: '', numero: '', complemento: '', bairro: '', cidade: '', referencia: '' });
+  const [end, setEnd] = useState(entrega?.endereco ?? ENDERECO_VAZIO);
   const [loadingCep, setLoadingCep] = useState(false);
+  const [areaStatus, setAreaStatus] = useState(null); // null (não verificado) | 'ok' | 'fora'
+  const [taxaResolvida, setTaxaResolvida] = useState(null);
 
   const buscarCEP = async (cep) => {
     const digits = cep.replace(/\D/g, '');
@@ -187,14 +269,39 @@ function StepEntrega({ config, onNext, onBack, setEntrega, entrega }) {
     }
   };
 
-  const endRecuado = config?.endereco_retirada;
-  const endStr = endRecuado
-    ? `${endRecuado.rua}, ${endRecuado.bairro} – ${endRecuado.cidade}/${endRecuado.uf ?? 'SP'}`
-    : 'Consultar no WhatsApp';
+  useEffect(() => {
+    if (tipo !== 'entrega') return;
+    if (!end.cidade && !end.bairro) { setAreaStatus(null); setTaxaResolvida(null); return; }
+
+    const cidadeOk = normalizar(end.cidade) === normalizar('Santos');
+    if (!cidadeOk) { setAreaStatus('fora'); setTaxaResolvida(null); return; }
+
+    // Só bairros cadastrados (e ativos) em taxas_entrega recebem entrega —
+    // isso não muda com frete_ativo. O que muda é só o valor cobrado:
+    // com frete_ativo desligado (padrão atual), a entrega sai grátis mesmo
+    // pros bairros cadastrados; a taxa da tabela só volta a valer quando
+    // frete_ativo for religado.
+    const match = taxasEntrega.find((t) => normalizar(t.bairro) === normalizar(end.bairro));
+    if (!match) { setAreaStatus('fora'); setTaxaResolvida(null); return; }
+
+    setAreaStatus('ok');
+    setTaxaResolvida(freteAtivo ? Number(match.taxa) : 0);
+  }, [tipo, end.cidade, end.bairro, taxasEntrega, freteAtivo]);
+
+  const handleSelecionarEndereco = (sel) => {
+    setEnd((p) => ({ ...p, ...sel }));
+  };
+
+  const enderecoIncompleto = tipo === 'entrega' && (!end.rua.trim() || !end.numero.trim());
 
   const handleNext = () => {
     if (!tipo) return;
-    setEntrega({ tipo, endereco: tipo === 'entrega' ? end : null });
+    if (tipo === 'entrega' && (areaStatus !== 'ok' || enderecoIncompleto)) return;
+    setEntrega({
+      tipo,
+      endereco: tipo === 'entrega' ? end : null,
+      taxaBase: tipo === 'entrega' ? taxaResolvida : 0,
+    });
     onNext();
   };
 
@@ -206,8 +313,8 @@ function StepEntrega({ config, onNext, onBack, setEntrega, entrega }) {
 
       <div className="mb-6 flex flex-col gap-3 sm:flex-row">
         {[
-          { id: 'entrega', title: 'Entrega', sub: `Taxa: ${formatPrice(config?.taxa_entrega_padrao ?? 5)}` },
-          { id: 'retirada', title: 'Retirar no local', sub: 'Grátis · ' + endStr },
+          { id: 'entrega', title: 'Entrega', sub: freteAtivo ? 'Taxa varia por bairro (só Santos)' : null },
+          { id: 'retirada', title: 'Retirar no local', sub: 'Grátis' },
         ].map(({ id, title, sub }) => (
           <button
             key={id}
@@ -217,17 +324,41 @@ function StepEntrega({ config, onNext, onBack, setEntrega, entrega }) {
               tipo === id ? 'border-rose bg-rose/5' : 'border-border-light hover:border-rose/40'
             }`}
           >
-            <p className="font-semibold text-text-primary">{title}</p>
-            <p className="text-[0.82rem] text-text-secondary">{sub}</p>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="font-semibold text-text-primary">{title}</p>
+              {id === 'entrega' && !freteAtivo && (
+                <span className="rounded-full bg-success/15 px-2 py-0.5 text-[0.7rem] font-bold text-success">
+                  GRÁTIS EM SANTOS
+                </span>
+              )}
+            </div>
+            {sub && <p className="text-[0.82rem] text-text-secondary">{sub}</p>}
           </button>
         ))}
       </div>
 
       {tipo === 'entrega' && (
         <div className="flex flex-col gap-3">
+          {taxasEntrega.length > 0 && (
+            <details className="rounded-card border border-border-light bg-bg-alt px-4 py-3 text-[0.85rem]">
+              <summary className="cursor-pointer font-medium text-text-primary">Consultar bairros atendidos</summary>
+              <p className="mt-2 text-text-secondary">
+                {taxasEntrega.map((t) => t.bairro).join(', ')}
+              </p>
+            </details>
+          )}
+
+          <div>
+            <EnderecoAutocomplete onSelect={handleSelecionarEndereco} />
+            <p className="mt-1 text-[0.78rem] text-text-secondary">
+              Atalho opcional — se preferir, é só preencher os campos abaixo direto, sem precisar buscar.
+            </p>
+          </div>
+
           <div>
             <label className="mb-1 block text-[0.85rem] font-medium text-text-primary">CEP</label>
             <input
+              inputMode="numeric"
               value={formatarCEP(end.cep)}
               onChange={(e) => {
                 const v = e.target.value;
@@ -241,12 +372,12 @@ function StepEntrega({ config, onNext, onBack, setEntrega, entrega }) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="col-span-2">
-              <label className="mb-1 block text-[0.85rem] font-medium text-text-primary">Rua / Avenida</label>
-              <input value={end.rua} onChange={(e) => setEnd((p) => ({ ...p, rua: e.target.value }))} className={ic} />
+              <label className="mb-1 block text-[0.85rem] font-medium text-text-primary">Rua / Avenida *</label>
+              <input required value={end.rua} onChange={(e) => setEnd((p) => ({ ...p, rua: e.target.value }))} className={ic} />
             </div>
             <div>
-              <label className="mb-1 block text-[0.85rem] font-medium text-text-primary">Número</label>
-              <input value={end.numero} onChange={(e) => setEnd((p) => ({ ...p, numero: e.target.value }))} className={ic} />
+              <label className="mb-1 block text-[0.85rem] font-medium text-text-primary">Número *</label>
+              <input required inputMode="numeric" value={end.numero} onChange={(e) => setEnd((p) => ({ ...p, numero: e.target.value }))} className={ic} />
             </div>
             <div>
               <label className="mb-1 block text-[0.85rem] font-medium text-text-primary">Complemento</label>
@@ -265,11 +396,59 @@ function StepEntrega({ config, onNext, onBack, setEntrega, entrega }) {
               <input value={end.referencia} onChange={(e) => setEnd((p) => ({ ...p, referencia: e.target.value }))} placeholder="Próximo ao…" className={ic} />
             </div>
           </div>
+
+          {areaStatus === 'ok' && (
+            <div className="rounded-card border border-success/30 bg-success/5 p-3 text-[0.85rem] text-success">
+              {freteAtivo ? (
+                <>
+                  Entregamos em {end.bairro}! Taxa: {formatPrice(taxaResolvida)}
+                  {config?.modo_chuva_ativo && ` + ${formatPrice(config?.sobretaxa_chuva ?? 0)} de sobretaxa de chuva`}
+                </>
+              ) : (
+                <>Frete GRÁTIS em Santos!</>
+              )}
+            </div>
+          )}
+
+          {areaStatus === 'ok' && enderecoIncompleto && (
+            <p className="text-[0.82rem] text-rose-dark">Preencha a rua e o número pra continuar.</p>
+          )}
+
+          {areaStatus === 'fora' && (
+            <div className="rounded-card border border-rose/30 bg-rose/5 p-4">
+              <p className="mb-3 text-[0.88rem] text-rose-dark">
+                Ainda não entregamos nesta região. Você pode retirar no local ou entrar em contato para verificar disponibilidade.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTipo('retirada')}
+                  className="rounded-full bg-rose px-4 py-2 text-[0.82rem] font-semibold text-white hover:bg-rose-dark"
+                >
+                  Escolher retirada no local
+                </button>
+                <a
+                  href={waLink('Olá! Gostaria de saber se vocês entregam na minha região.')}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-full border border-success/40 px-4 py-2 text-[0.82rem] font-medium text-success hover:border-success"
+                >
+                  Falar no WhatsApp
+                </a>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
+      {tipo === 'retirada' && <CardRetirada config={config} />}
+
       <div className="mt-6 flex gap-3">
-        <button onClick={handleNext} disabled={!tipo} className="flex-1 rounded-full bg-rose py-2.5 text-[0.95rem] font-semibold text-white hover:bg-rose-dark disabled:opacity-50">
+        <button
+          onClick={handleNext}
+          disabled={!tipo || (tipo === 'entrega' && (areaStatus !== 'ok' || enderecoIncompleto))}
+          className="flex-1 rounded-full bg-rose py-2.5 text-[0.95rem] font-semibold text-white hover:bg-rose-dark disabled:opacity-50"
+        >
           Continuar
         </button>
         <button onClick={onBack} className="rounded-full border border-border-light px-5 py-2.5 text-[0.9rem] text-text-secondary hover:border-rose hover:text-rose">
@@ -283,9 +462,14 @@ function StepEntrega({ config, onNext, onBack, setEntrega, entrega }) {
 // ── Etapa 3 — Agendamento ────────────────────────────────────
 
 function StepAgendamento({ config, onNext, onBack, setAgendamento, agendamento, datasBloqueadas }) {
-  const [tipo, setTipo] = useState(agendamento?.tipo ?? null);
   const [dataSel, setDataSel] = useState(agendamento?.data ?? '');
   const [periodo, setPeriodo] = useState(agendamento?.periodo ?? '');
+  const [outraData, setOutraData] = useState(false);
+  const [erroOutraData, setErroOutraData] = useState('');
+  // Só usado pra forçar o campo de data manual a refletir uma seleção feita
+  // por fora (clique numa pílula) — não muda quando o próprio campo termina
+  // de ser digitado, senão ele se remonta e perde o foco bem nessa hora.
+  const [syncToken, setSyncToken] = useState(0);
 
   const antecedencia = config?.antecedencia_minima_horas ?? 48;
   const minDate = addDias(new Date(), Math.ceil(antecedencia / 24));
@@ -297,89 +481,125 @@ function StepAgendamento({ config, onNext, onBack, setAgendamento, agendamento, 
     return diasConfig.includes(d.getDay()) && !datasBloqueadas.includes(iso);
   });
 
-  const handleNext = () => {
-    if (!tipo) return;
-    if (tipo === 'agendado' && (!dataSel || !periodo)) return;
-    setAgendamento({ tipo, data: tipo === 'rapido' ? isoDate(diasDisponiveis[0]) : dataSel, periodo: tipo === 'rapido' ? 'manha' : periodo });
-    onNext();
-  };
-
   const labelDia = (d) => {
     const dias2 = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
     return `${dias2[d.getDay()]} ${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`;
   };
 
+  const handleOutraData = (valor) => {
+    setErroOutraData('');
+    // Um <input type="date"> reporta valor "" enquanto o cliente ainda está
+    // digitando (dia/mês preenchidos, ano incompleto) — não só quando ele
+    // realmente limpa o campo. Por isso, não mexe em dataSel aqui: se
+    // resetássemos o estado a cada tecla, o campo controlado forçaria os
+    // dígitos já digitados de volta pro vazio, "expulsando" o cliente bem na
+    // hora de digitar o ano.
+    if (!valor) return;
+    const d = new Date(valor + 'T12:00:00');
+    if (d < minDate) {
+      setErroOutraData(`Escolha uma data a partir de ${labelDia(minDate)} (prazo mínimo de ${antecedencia}h).`);
+      return;
+    }
+    if (!diasConfig.includes(d.getDay())) {
+      setErroOutraData('Não atendemos pedidos nesse dia da semana.');
+      return;
+    }
+    if (datasBloqueadas.includes(valor)) {
+      setErroOutraData('Essa data está indisponível. Escolha outra.');
+      return;
+    }
+    setDataSel(valor);
+  };
+
+  const handleSelecionarPill = (iso) => {
+    setErroOutraData('');
+    setDataSel(iso);
+    setSyncToken((t) => t + 1);
+  };
+
+  const handleNext = () => {
+    if (!dataSel || !periodo) return;
+    setAgendamento({ data: dataSel, periodo });
+    onNext();
+  };
+
   return (
     <div className="mx-auto max-w-lg">
-      <h2 className="mb-6 font-heading text-[1.3rem] font-semibold text-text-primary">Quando quer receber?</h2>
+      <h2 className="mb-2 font-heading text-[1.3rem] font-semibold text-text-primary">Quando quer receber?</h2>
+      <p className="mb-6 text-[0.85rem] text-text-secondary">Prazo mínimo de {antecedencia}h de antecedência.</p>
 
-      <div className="mb-6 flex flex-col gap-3 sm:flex-row">
-        <button
-          type="button"
-          onClick={() => setTipo('rapido')}
-          className={`flex-1 rounded-card border-2 p-4 text-left transition-colors ${tipo === 'rapido' ? 'border-rose bg-rose/5' : 'border-border-light hover:border-rose/40'}`}
-        >
-          <p className="font-semibold text-text-primary">O mais rápido possível</p>
-          <p className="text-[0.82rem] text-text-secondary">Prazo mínimo: {antecedencia}h</p>
-        </button>
-        <button
-          type="button"
-          onClick={() => setTipo('agendado')}
-          className={`flex-1 rounded-card border-2 p-4 text-left transition-colors ${tipo === 'agendado' ? 'border-rose bg-rose/5' : 'border-border-light hover:border-rose/40'}`}
-        >
-          <p className="font-semibold text-text-primary">Agendar data</p>
-          <p className="text-[0.82rem] text-text-secondary">Escolha um dia nos próximos 30 dias</p>
-        </button>
-      </div>
+      <div className="mb-6">
+        <p className="mb-2 text-[0.85rem] font-medium text-text-primary">Selecione a data</p>
+        <div className="flex flex-wrap gap-2">
+          {diasDisponiveis.slice(0, 30).map((d) => {
+            const iso = isoDate(d);
+            return (
+              <button
+                key={iso}
+                type="button"
+                onClick={() => handleSelecionarPill(iso)}
+                className={`rounded-full border px-3 py-1.5 text-[0.82rem] font-medium transition-colors ${
+                  dataSel === iso ? 'border-rose bg-rose text-white' : 'border-border-light hover:border-rose/50'
+                }`}
+              >
+                {labelDia(d)}
+              </button>
+            );
+          })}
+        </div>
 
-      {tipo === 'agendado' && (
-        <div className="mb-6">
-          <p className="mb-2 text-[0.85rem] font-medium text-text-primary">Selecione a data</p>
-          <div className="flex flex-wrap gap-2">
-            {diasDisponiveis.slice(0, 20).map((d) => {
-              const iso = isoDate(d);
-              return (
-                <button
-                  key={iso}
-                  type="button"
-                  onClick={() => setDataSel(iso)}
-                  className={`rounded-full border px-3 py-1.5 text-[0.82rem] font-medium transition-colors ${
-                    dataSel === iso ? 'border-rose bg-rose text-white' : 'border-border-light hover:border-rose/50'
-                  }`}
-                >
-                  {labelDia(d)}
-                </button>
-              );
-            })}
-          </div>
-
-          {dataSel && (
-            <div className="mt-4">
-              <p className="mb-2 text-[0.85rem] font-medium text-text-primary">Período de preferência</p>
-              <div className="flex gap-2">
-                {STATUS_PERIODOS.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setPeriodo(p.id)}
-                    className={`flex-1 rounded-card border-2 p-3 text-center transition-colors ${
-                      periodo === p.id ? 'border-rose bg-rose/5' : 'border-border-light hover:border-rose/40'
-                    }`}
-                  >
-                    <p className="text-[0.85rem] font-semibold text-text-primary">{p.label}</p>
-                    <p className="text-[0.75rem] text-text-secondary">{p.sub}</p>
-                  </button>
-                ))}
-              </div>
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={() => { setOutraData((v) => !v); setErroOutraData(''); }}
+            className="text-[0.82rem] font-medium text-rose underline"
+          >
+            {outraData ? 'Ver datas sugeridas' : 'Precisa agendar mais pra frente? Escolher outra data'}
+          </button>
+          {outraData && (
+            <div className="mt-2">
+              <input
+                key={syncToken}
+                type="date"
+                min={isoDate(minDate)}
+                defaultValue={dataSel}
+                onChange={(e) => handleOutraData(e.target.value)}
+                className="w-full rounded-card border border-border-light bg-bg-alt px-4 py-2.5 text-[0.95rem] outline-none focus:border-rose focus:ring-1 focus:ring-rose"
+              />
+              {erroOutraData && <p className="mt-1 text-[0.8rem] text-rose-dark">{erroOutraData}</p>}
+              {!erroOutraData && dataSel && !diasDisponiveis.some((d) => isoDate(d) === dataSel) && (
+                <p className="mt-1 text-[0.8rem] text-success">Data selecionada: {labelDia(new Date(dataSel + 'T12:00:00'))}</p>
+              )}
             </div>
           )}
         </div>
-      )}
+
+        {dataSel && (
+          <div className="mt-4">
+            <p className="mb-2 text-[0.85rem] font-medium text-text-primary">Período de preferência</p>
+            <div className="flex gap-2">
+              {STATUS_PERIODOS.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setPeriodo(p.id)}
+                  className={`flex-1 rounded-card border-2 p-3 text-center transition-colors ${
+                    periodo === p.id ? 'border-rose bg-rose/5' : 'border-border-light hover:border-rose/40'
+                  }`}
+                >
+                  <p className="text-[0.85rem] font-semibold text-text-primary">{p.label}</p>
+                  <p className="text-[0.75rem] text-text-secondary">{p.sub}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="flex gap-3">
         <button
           onClick={handleNext}
-          disabled={!tipo || (tipo === 'agendado' && (!dataSel || !periodo))}
+          disabled={!dataSel || !periodo}
           className="flex-1 rounded-full bg-rose py-2.5 text-[0.95rem] font-semibold text-white hover:bg-rose-dark disabled:opacity-50"
         >
           Continuar
@@ -394,62 +614,42 @@ function StepAgendamento({ config, onNext, onBack, setAgendamento, agendamento, 
 
 // ── Etapa 4 — Pagamento ──────────────────────────────────────
 
-function StepPagamento({ onNext, onBack, setPagamento, pagamento }) {
-  const [forma, setForma] = useState(pagamento?.forma ?? null);
-  const [troco, setTroco] = useState(pagamento?.troco ?? '');
+function StepPagamento({ config, total, onNext, onBack, setPagamento, pagamento }) {
   const [obs, setObs] = useState(pagamento?.obs ?? '');
+  const pixOk = Boolean(config?.pix_chave && config?.pix_nome);
 
   const handleNext = () => {
-    if (!forma) return;
-    setPagamento({ forma, troco: forma === 'dinheiro' && troco ? parseFloat(troco) : null, obs });
+    if (!pixOk) return;
+    setPagamento({ forma: 'pix', obs });
     onNext();
   };
 
   const ic = 'w-full rounded-card border border-border-light bg-bg-alt px-4 py-2.5 text-[0.95rem] outline-none focus:border-rose focus:ring-1 focus:ring-rose';
 
-  const formas = [
-    { id: 'pix', label: 'Pix na entrega', sub: 'Mais popular · sem taxas', badge: true },
-    { id: 'dinheiro', label: 'Dinheiro na entrega', sub: 'Troco disponível' },
-    { id: 'cartao', label: 'Cartão na entrega', sub: 'Maquininha na hora' },
-  ];
-
   return (
     <div className="mx-auto max-w-lg">
-      <h2 className="mb-6 font-heading text-[1.3rem] font-semibold text-text-primary">Como vai pagar?</h2>
+      <h2 className="mb-6 font-heading text-[1.3rem] font-semibold text-text-primary">Pagamento</h2>
 
-      <div className="mb-6 flex flex-col gap-3">
-        {formas.map(({ id, label, sub, badge }) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setForma(id)}
-            className={`relative rounded-card border-2 p-4 text-left transition-colors ${
-              forma === id ? 'border-rose bg-rose/5' : 'border-border-light hover:border-rose/40'
-            }`}
+      {pixOk ? (
+        <div className="mb-6 rounded-card border-2 border-rose bg-rose/5 p-5 text-center">
+          <p className="font-heading text-[1.1rem] font-bold text-text-primary">Pagamento via Pix</p>
+          <p className="mt-1 text-[0.85rem] text-text-secondary">O QR Code será gerado após confirmar o pedido</p>
+          <p className="mt-3 text-[1.2rem] font-bold text-rose">{formatPrice(total)}</p>
+        </div>
+      ) : (
+        <div className="mb-6 rounded-card border-2 border-rose bg-rose/10 p-5 text-center">
+          <p className="font-heading text-[1.1rem] font-bold text-rose-dark">Configuração de Pix pendente</p>
+          <p className="mt-1 text-[0.85rem] text-text-secondary">
+            Entre em contato pelo WhatsApp para finalizar o pedido
+          </p>
+          <a
+            href={waLink('Olá! Quero fazer um pedido mas o pagamento por Pix não está disponível no site no momento.')}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 inline-block rounded-full bg-success px-6 py-2.5 text-[0.9rem] font-semibold text-white hover:bg-[#268a41]"
           >
-            {badge && (
-              <span className="absolute right-3 top-3 rounded-full bg-rose px-2 py-0.5 text-[0.68rem] font-semibold text-white">
-                Mais popular
-              </span>
-            )}
-            <p className="font-semibold text-text-primary">{label}</p>
-            <p className="text-[0.82rem] text-text-secondary">{sub}</p>
-          </button>
-        ))}
-      </div>
-
-      {forma === 'dinheiro' && (
-        <div className="mb-4">
-          <label className="mb-1 block text-[0.85rem] font-medium text-text-primary">Troco para quanto? <span className="font-normal text-text-secondary">(opcional)</span></label>
-          <input
-            type="number"
-            step="0.01"
-            min="0"
-            value={troco}
-            onChange={(e) => setTroco(e.target.value)}
-            placeholder="R$ 0,00"
-            className={ic}
-          />
+            Falar no WhatsApp
+          </a>
         </div>
       )}
 
@@ -465,7 +665,7 @@ function StepPagamento({ onNext, onBack, setPagamento, pagamento }) {
       </div>
 
       <div className="flex gap-3">
-        <button onClick={handleNext} disabled={!forma} className="flex-1 rounded-full bg-rose py-2.5 text-[0.95rem] font-semibold text-white hover:bg-rose-dark disabled:opacity-50">
+        <button onClick={handleNext} disabled={!pixOk} className="flex-1 rounded-full bg-rose py-2.5 text-[0.95rem] font-semibold text-white hover:bg-rose-dark disabled:opacity-50">
           Continuar
         </button>
         <button onClick={onBack} className="rounded-full border border-border-light px-5 py-2.5 text-[0.9rem] text-text-secondary hover:border-rose hover:text-rose">
@@ -478,17 +678,17 @@ function StepPagamento({ onNext, onBack, setPagamento, pagamento }) {
 
 // ── Etapa 5 — Revisão ────────────────────────────────────────
 
-function StepRevisao({ items, config, entrega, agendamento, pagamento, guest, onBack, onConfirm, loading }) {
-  const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
-  const taxa = entrega?.tipo === 'entrega' ? (config?.taxa_entrega_padrao ?? 5) : 0;
-  const total = subtotal + taxa;
+function StepRevisao({ items, subtotal, config, entrega, agendamento, pagamento, guest, coupon, onBack, onConfirm, loading }) {
+  const taxa = calcularTaxaEntrega(entrega, config);
+  const desconto = coupon?.desconto ?? 0;
+  const total = subtotal - desconto + taxa;
+  const pixOk = Boolean(config?.pix_chave && config?.pix_nome);
 
   const dataLabel = agendamento?.data
     ? new Date(agendamento.data + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })
     : '';
   const periodoLabel = STATUS_PERIODOS.find((p) => p.id === agendamento?.periodo)?.label ?? '';
 
-  const formaLabel = { pix: 'Pix na entrega', dinheiro: 'Dinheiro na entrega', cartao: 'Cartão na entrega' };
   const endStr = entrega?.tipo === 'entrega' && entrega?.endereco
     ? `${entrega.endereco.rua}, ${entrega.endereco.numero} – ${entrega.endereco.bairro}, ${entrega.endereco.cidade}`
     : 'Retirar no local';
@@ -511,8 +711,16 @@ function StepRevisao({ items, config, entrega, agendamento, pagamento, guest, on
           <div className="flex justify-between text-[0.85rem] text-text-secondary">
             <span>Subtotal</span><span>{formatPrice(subtotal)}</span>
           </div>
-          <div className="flex justify-between text-[0.85rem] text-text-secondary">
-            <span>Taxa de entrega</span><span>{taxa > 0 ? formatPrice(taxa) : 'Grátis'}</span>
+          {coupon && (
+            <div className="flex justify-between text-[0.85rem] text-success">
+              <span>Desconto (cupom {coupon.codigo})</span><span>-{formatPrice(desconto)}</span>
+            </div>
+          )}
+          <div className="flex justify-between text-[0.85rem]">
+            <span className="text-text-secondary">Entrega{config?.modo_chuva_ativo && entrega?.tipo === 'entrega' && taxa > 0 ? ' (com chuva)' : ''}</span>
+            <span className={taxa > 0 ? 'text-text-secondary' : 'font-semibold text-success'}>
+              {taxa > 0 ? formatPrice(taxa) : 'GRÁTIS'}
+            </span>
           </div>
           <div className="flex justify-between text-[1.1rem] font-bold text-text-primary">
             <span>Total</span><span className="text-rose">{formatPrice(total)}</span>
@@ -531,7 +739,7 @@ function StepRevisao({ items, config, entrega, agendamento, pagamento, guest, on
         </div>
         <div className="flex gap-2">
           <span className="w-24 flex-shrink-0 text-text-secondary">Pagamento</span>
-          <span className="text-text-primary">{formaLabel[pagamento?.forma]}{pagamento?.troco ? ` · Troco p/ ${formatPrice(pagamento.troco)}` : ''}</span>
+          <span className="text-text-primary">{FORMA_PAGAMENTO_LABELS[pagamento?.forma]}</span>
         </div>
         {pagamento?.obs && (
           <div className="flex gap-2">
@@ -547,12 +755,19 @@ function StepRevisao({ items, config, entrega, agendamento, pagamento, guest, on
         )}
       </div>
 
+      {!pixOk && (
+        <p className="mb-3 text-center text-[0.85rem] text-rose-dark">
+          Configuração de Pix pendente — não é possível confirmar o pedido agora. Fale no WhatsApp.
+        </p>
+      )}
+
       <div className="flex gap-3">
         <button
           onClick={onConfirm}
-          disabled={loading}
-          className="flex-1 rounded-full bg-gold py-3 text-[1rem] font-bold text-white transition-colors hover:bg-gold-dark disabled:opacity-60"
+          disabled={loading || !pixOk}
+          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-gold py-3 text-[1rem] font-bold text-white transition-colors hover:bg-gold-dark disabled:opacity-60"
         >
+          {loading && <Spinner />}
           {loading ? 'Enviando pedido…' : 'Confirmar pedido'}
         </button>
         <button onClick={onBack} className="rounded-full border border-border-light px-5 py-2.5 text-[0.9rem] text-text-secondary hover:border-rose hover:text-rose">
@@ -567,25 +782,27 @@ function StepRevisao({ items, config, entrega, agendamento, pagamento, guest, on
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
-  const { items, clearCart } = useCart();
-  const { user } = useAuth();
+  const { items, subtotal, clearCart, coupon } = useCart();
+  const { user, perfil } = useAuth();
+  const { config } = useAdminProducts();
 
   const [step, setStep] = useState(0);
   const [guest, setGuest] = useState(null);
   const [entrega, setEntrega] = useState(null);
   const [agendamento, setAgendamento] = useState(null);
   const [pagamento, setPagamento] = useState(null);
-  const [config, setConfig] = useState(null);
   const [datasBlq, setDatasBlq] = useState([]);
+  const [taxasEntrega, setTaxasEntrega] = useState([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (items.length === 0) navigate('/');
-    supabase.from('configuracoes').select('*').eq('id', 1).single().then(({ data }) => {
-      if (data) setConfig(data);
-    });
     supabase.from('datas_bloqueadas').select('data').then(({ data }) => {
       if (data) setDatasBlq(data.map((d) => d.data));
+    });
+    supabase.from('taxas_entrega').select('*').eq('ativa', true).then(({ data, error }) => {
+      if (error) console.error('Erro ao buscar taxas de entrega:', error);
+      setTaxasEntrega(data ?? []);
     });
   }, []); // eslint-disable-line
 
@@ -594,27 +811,51 @@ export default function CheckoutPage() {
     if (user && step === 0) setStep(1);
   }, [user, step]);
 
+  const taxaEntrega = calcularTaxaEntrega(entrega, config);
+  const desconto = coupon?.desconto ?? 0;
+  const total = subtotal - desconto + taxaEntrega;
+
   const handleConfirm = async () => {
     setSaving(true);
     try {
-      const subtotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
-      const taxa = entrega?.tipo === 'entrega' ? (config?.taxa_entrega_padrao ?? 5) : 0;
+      const telefoneCliente = user ? perfil?.telefone : guest?.telefone;
+
+      // revalida o cupom com o telefone real (só conhecido a partir daqui) antes de cobrar
+      let cupomFinal = coupon;
+      if (coupon) {
+        const { data, error: rpcError } = await supabase.rpc('aplicar_cupom', {
+          p_codigo: coupon.codigo,
+          p_telefone: telefoneCliente || '',
+          p_valor_pedido: subtotal,
+        });
+        const resultado = !rpcError && Array.isArray(data) ? data[0] : null;
+        if (rpcError || !resultado || resultado.erro) {
+          alert(`O cupom ${coupon.codigo} não é mais válido (${resultado?.erro || 'erro ao validar'}). Remova-o e tente novamente.`);
+          setSaving(false);
+          return;
+        }
+        cupomFinal = { cupomId: resultado.cupom_id, codigo: resultado.codigo, desconto: Number(resultado.desconto) };
+      }
+
+      const descontoFinal = cupomFinal?.desconto ?? 0;
 
       const pedidoPayload = {
         usuario_id: user?.id ?? null,
         dados_convidado: !user && guest ? guest : null,
         origem: 'site',
-        status: 'recebido',
+        status: 'aguardando_pagamento',
+        data_expiracao_pagamento: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
         tipo_entrega: entrega.tipo,
         endereco_entrega: entrega.tipo === 'entrega' ? entrega.endereco : null,
         data_agendada: agendamento.data,
         periodo_agendado: agendamento.periodo,
-        forma_pagamento: pagamento.forma,
-        troco_para: pagamento.troco,
+        forma_pagamento: 'pix',
         observacoes: pagamento.obs || null,
         subtotal,
-        taxa_entrega: taxa,
-        total: subtotal + taxa,
+        taxa_entrega: taxaEntrega,
+        cupom_id: cupomFinal?.cupomId ?? null,
+        desconto_aplicado: descontoFinal,
+        total: subtotal - descontoFinal + taxaEntrega,
       };
 
       const { data: pedido, error } = await supabase
@@ -634,8 +875,17 @@ export default function CheckoutPage() {
 
       await supabase.from('itens_pedido').insert(itensPayload);
 
+      if (cupomFinal?.cupomId) {
+        supabase.rpc('consumir_cupom', { p_cupom_id: cupomFinal.cupomId }).then(({ error: consumoError }) => {
+          if (consumoError) console.error('Erro ao registrar uso do cupom:', consumoError);
+        });
+      }
+
+      // Não bloqueia nem falha o checkout se o e-mail não sair.
+      notificarPedidoNovoPorEmail(config, pedido, itensPayload).catch(() => {});
+
       if (clearCart) clearCart();
-      navigate(`/pedido/${pedido.numero_pedido}`);
+      navigate(`/pagamento/${pedido.numero_pedido}`);
     } catch (err) {
       alert('Erro ao confirmar pedido. Tente novamente.');
       console.error(err);
@@ -647,25 +897,61 @@ export default function CheckoutPage() {
   if (items.length === 0) return null;
 
   return (
-    <div className="min-h-screen bg-bg-alt pt-[70px]">
+    <div className="min-h-screen bg-bg-alt pt-[60px] md:pt-[70px]">
       <div className="container-site max-w-2xl py-6">
-        <a href="/" className="mb-4 inline-block text-[0.85rem] font-medium text-text-secondary hover:text-rose">
-          ← Voltar ao cardápio
-        </a>
+        <div className="mb-6 flex flex-col items-start gap-2">
+          <Link
+            to="/"
+            className="flex items-center gap-2 rounded-full border border-border-light bg-bg-main px-4 py-2 text-[0.85rem] font-semibold text-text-primary shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-rose hover:text-rose hover:shadow-md"
+          >
+            <ArrowLeftIcon className="h-4 w-4 flex-shrink-0" />
+            Voltar à loja
+          </Link>
+          {step > 0 && (
+            <button
+              type="button"
+              onClick={() => setStep((s) => s - 1)}
+              className="flex items-center gap-1.5 pl-1 text-[0.8rem] font-medium text-text-secondary transition-colors hover:text-rose"
+            >
+              <ArrowLeftIcon className="h-3.5 w-3.5 flex-shrink-0" />
+              Etapa anterior
+            </button>
+          )}
+        </div>
         <Stepper current={step} />
         <div className="mt-6 rounded-card border border-border-light bg-bg-main p-6">
           {step === 0 && <StepIdentificacao onNext={() => setStep(1)} setGuest={setGuest} />}
-          {step === 1 && <StepEntrega config={config} onNext={() => setStep(2)} onBack={() => setStep(0)} setEntrega={setEntrega} entrega={entrega} />}
+          {step === 1 && (
+            <StepEntrega
+              config={config}
+              taxasEntrega={taxasEntrega}
+              onNext={() => setStep(2)}
+              onBack={() => setStep(0)}
+              setEntrega={setEntrega}
+              entrega={entrega}
+            />
+          )}
           {step === 2 && <StepAgendamento config={config} onNext={() => setStep(3)} onBack={() => setStep(1)} setAgendamento={setAgendamento} agendamento={agendamento} datasBloqueadas={datasBlq} />}
-          {step === 3 && <StepPagamento onNext={() => setStep(4)} onBack={() => setStep(2)} setPagamento={setPagamento} pagamento={pagamento} />}
+          {step === 3 && (
+            <StepPagamento
+              config={config}
+              total={total}
+              onNext={() => setStep(4)}
+              onBack={() => setStep(2)}
+              setPagamento={setPagamento}
+              pagamento={pagamento}
+            />
+          )}
           {step === 4 && (
             <StepRevisao
               items={items}
+              subtotal={subtotal}
               config={config}
               entrega={entrega}
               agendamento={agendamento}
               pagamento={pagamento}
               guest={guest}
+              coupon={coupon}
               onBack={() => setStep(3)}
               onConfirm={handleConfirm}
               loading={saving}

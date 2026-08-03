@@ -50,10 +50,15 @@ module.exports = {
           '0%': { transform: 'translateX(100%)' },
           '100%': { transform: 'translateX(0)' },
         },
+        bump: {
+          '0%, 100%': { transform: 'scale(1)' },
+          '50%': { transform: 'scale(1.35)' },
+        },
       },
       animation: {
         fadeUp: 'fadeUp 0.5s ease forwards',
         slideIn: 'slideIn 0.3s ease forwards',
+        bump: 'bump 0.4s ease',
       },
     },
   },

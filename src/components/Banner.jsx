@@ -1,21 +1,26 @@
 import { useState } from 'react';
-import { getStoreStatus } from '../lib/storeHours';
-import { useImageSrc } from '../context/ImageOverridesContext';
-import { SITE_IMAGES } from '../data/editableImages';
-
-const [WIDE, LOGO] = SITE_IMAGES;
+import { getStoreStatus, formatDiasLabel } from '../lib/storeHours';
+import { useAdminProducts } from '../context/AdminProductsContext';
+import { formatPrice } from '../data/products';
 
 export default function Banner() {
   const [showInfo, setShowInfo] = useState(false);
-  const status = getStoreStatus();
-  const wideSrc = useImageSrc(WIDE.key, WIDE.fallback);
-  const logoSrc = useImageSrc(LOGO.key, LOGO.fallback);
+  const { config } = useAdminProducts();
+  const horario = config?.horario_funcionamento;
+  const status = getStoreStatus(horario);
+  const wideSrc = config?.banner_url || '/images/banner-wide.jpg';
+  const logoSrc = config?.logo_url || '/images/banner-brigadeiro-heart.jpg';
+  const ajusteContain = config?.banner_ajuste === 'contain';
 
   return (
     <section className="container-site pt-6">
-      <div className="relative h-[180px] overflow-hidden rounded-card sm:h-[260px]">
-        <img src={wideSrc} alt="Brigadeiros artesanais Doces da Ale" className="h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
+      <div className="relative aspect-[16/9] overflow-hidden rounded-card bg-bg-alt sm:aspect-[21/6]">
+        <img
+          src={wideSrc}
+          alt="Brigadeiros artesanais Doces da Ale"
+          className={`h-full w-full ${ajusteContain ? 'object-contain' : 'object-cover'}`}
+        />
+        {!ajusteContain && <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />}
       </div>
 
       <div className="relative z-[1] -mt-10 flex flex-col gap-3 sm:-mt-12 sm:flex-row sm:items-end">
@@ -43,12 +48,24 @@ export default function Banner() {
           </div>
           {showInfo && (
             <div className="mt-2 text-[0.85rem] text-text-secondary">
-              <p>Seg a Sáb, 9h às 18h · Fechado aos domingos</p>
-              <p>Entrega em Santos e região · Pedido mínimo R$ 20,00</p>
+              <p>{formatDiasLabel(horario?.dias)}, {horario?.abre ?? '09:00'} às {horario?.fecha ?? '18:00'}</p>
+              <p>Entrega em Santos e região</p>
             </div>
           )}
         </div>
       </div>
+
+      {config?.frete_ativo && config?.modo_chuva_ativo && (
+        <div className="relative z-[1] mt-3 rounded-card border border-gold/40 bg-gold/10 px-4 py-2.5 text-[0.85rem] font-medium text-gold-dark">
+          Sobretaxa de chuva de {formatPrice(config?.sobretaxa_chuva ?? 3)} aplicada às entregas hoje
+        </div>
+      )}
+
+      {config?.banner_secundario_url && (
+        <div className="relative z-[1] mt-3 h-[100px] overflow-hidden rounded-card sm:h-[140px]">
+          <img src={config.banner_secundario_url} alt="Promoção Doces da Ale" className="h-full w-full object-cover" />
+        </div>
+      )}
     </section>
   );
 }

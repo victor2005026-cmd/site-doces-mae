@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { formatPrice } from '../data/products';
 import { waLink } from '../lib/whatsapp';
 
 const STATUS_LABELS = {
+  aguardando_confirmacao_pagamento: { label: 'Aguardando confirmação', color: 'text-gold' },
   recebido: { label: 'Aguardando confirmação', color: 'text-gold' },
   confirmado: { label: 'Confirmado', color: 'text-success' },
   preparando: { label: 'Preparando', color: 'text-success' },
@@ -16,6 +17,10 @@ const STATUS_LABELS = {
 };
 
 const PERIODO_LABELS = { manha: 'Manhã (9h – 12h)', tarde: 'Tarde (13h – 17h)', noite: 'Noite (18h – 21h)' };
+
+const FORMA_PAGAMENTO_LABELS = {
+  pix: 'Via Pix',
+};
 
 export default function OrderConfirmationPage() {
   const { numeroPedido } = useParams();
@@ -43,9 +48,16 @@ export default function OrderConfirmationPage() {
     fetchPedido();
   }, [numeroPedido]);
 
+  // Pedido ainda depende de pagamento: manda pra tela dedicada de aguardando pagamento
+  useEffect(() => {
+    if (pedido && pedido.status === 'aguardando_pagamento') {
+      navigate(`/pagamento/${pedido.numero_pedido}`, { replace: true });
+    }
+  }, [pedido, navigate]);
+
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center pt-[70px]">
+      <div className="flex min-h-screen items-center justify-center pt-[60px] md:pt-[70px]">
         <p className="text-text-secondary">Carregando pedido…</p>
       </div>
     );
@@ -53,9 +65,9 @@ export default function OrderConfirmationPage() {
 
   if (!pedido) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 pt-[70px]">
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 pt-[60px] md:pt-[70px]">
         <p className="text-text-secondary">Pedido não encontrado.</p>
-        <a href="/" className="text-rose underline">Voltar ao cardápio</a>
+        <Link to="/" className="text-rose underline">Voltar ao cardápio</Link>
       </div>
     );
   }
@@ -66,7 +78,7 @@ export default function OrderConfirmationPage() {
   });
 
   return (
-    <div className="min-h-screen bg-bg-alt pt-[70px]">
+    <div className="min-h-screen bg-bg-alt pt-[60px] md:pt-[70px]">
       <div className="container-site max-w-lg py-8">
 
         {/* Cabeçalho de sucesso */}
@@ -102,8 +114,11 @@ export default function OrderConfirmationPage() {
             <div className="flex justify-between text-text-secondary">
               <span>Subtotal</span><span>{formatPrice(pedido.subtotal)}</span>
             </div>
-            <div className="flex justify-between text-text-secondary">
-              <span>Entrega</span><span>{pedido.taxa_entrega > 0 ? formatPrice(pedido.taxa_entrega) : 'Grátis'}</span>
+            <div className="flex justify-between">
+              <span className="text-text-secondary">Entrega</span>
+              <span className={pedido.taxa_entrega > 0 ? 'text-text-secondary' : 'font-semibold text-success'}>
+                {pedido.taxa_entrega > 0 ? formatPrice(pedido.taxa_entrega) : 'GRÁTIS'}
+              </span>
             </div>
             <div className="flex justify-between text-[1rem] font-bold text-text-primary">
               <span>Total</span><span className="text-rose">{formatPrice(pedido.total)}</span>
@@ -132,7 +147,7 @@ export default function OrderConfirmationPage() {
           <div className="flex gap-2">
             <span className="w-24 flex-shrink-0 text-text-secondary">Pagamento</span>
             <span className="text-text-primary">
-              {{ pix: 'Pix', dinheiro: 'Dinheiro', cartao: 'Cartão' }[pedido.forma_pagamento]}
+              {FORMA_PAGAMENTO_LABELS[pedido.forma_pagamento] ?? pedido.forma_pagamento}
             </span>
           </div>
         </div>
@@ -140,12 +155,12 @@ export default function OrderConfirmationPage() {
         {/* Ações */}
         <div className="flex flex-col gap-3">
           {user && (
-            <a
-              href="/meus-pedidos"
+            <Link
+              to="/meus-pedidos"
               className="rounded-full border border-border-light py-2.5 text-center text-[0.9rem] font-medium text-text-primary hover:border-rose hover:text-rose"
             >
               Ver meus pedidos
-            </a>
+            </Link>
           )}
           <a
             href={waLink(`Olá! Tenho uma dúvida sobre o pedido ${pedido.numero_pedido}.`)}
@@ -155,9 +170,9 @@ export default function OrderConfirmationPage() {
           >
             Falar com a Ale
           </a>
-          <a href="/" className="text-center text-[0.85rem] text-text-secondary underline hover:text-rose">
+          <Link to="/" className="text-center text-[0.85rem] text-text-secondary underline hover:text-rose">
             Voltar ao cardápio
-          </a>
+          </Link>
         </div>
 
         {/* CTA para convidados criarem conta */}
@@ -169,13 +184,13 @@ export default function OrderConfirmationPage() {
             <p className="mb-3 text-[0.85rem] text-text-secondary">
               Crie uma senha em 10 segundos e acompanhe o status em tempo real.
             </p>
-            <a
-              href="/"
-              onClick={(e) => { e.preventDefault(); /* TODO: open AuthModal with register tab */ }}
+            <button
+              type="button"
+              onClick={() => { /* TODO: open AuthModal with register tab */ }}
               className="inline-block rounded-full bg-gold px-5 py-2 text-[0.9rem] font-semibold text-white hover:bg-gold-dark"
             >
               Criar minha conta
-            </a>
+            </button>
           </div>
         )}
       </div>

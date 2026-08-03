@@ -1,26 +1,31 @@
-const HOURS_KEY = 'docesdaale:admin-hours';
+const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-function loadConfig() {
-  try {
-    const raw = localStorage.getItem(HOURS_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return null;
+// Formata uma lista de dias (0=Dom..6=Sáb) como "Seg a Sáb" ou, se não for
+// um intervalo contínuo, como a lista separada por vírgula.
+export function formatDiasLabel(dias) {
+  if (!dias?.length) return '';
+  const sorted = [...dias].sort((a, b) => a - b);
+  const isConsecutive = sorted.every((d, i) => i === 0 || d === sorted[i - 1] + 1);
+  if (isConsecutive && sorted.length > 1) {
+    return `${DAY_NAMES[sorted[0]]} a ${DAY_NAMES[sorted[sorted.length - 1]]}`;
+  }
+  return sorted.map((d) => DAY_NAMES[d]).join(', ');
 }
 
-export function getStoreStatus(now = new Date()) {
-  const config = loadConfig();
+// Calcula aberto/fechado a partir do horario_funcionamento salvo em public.configuracoes.
+export function getStoreStatus(horarioFuncionamento, now = new Date()) {
+  const config = horarioFuncionamento ?? {};
 
-  if (config?.forceStatus === 'open') {
+  if (config.forceStatus === 'open') {
     return { isOpen: true, label: config.forceLabel || 'Aberto agora' };
   }
-  if (config?.forceStatus === 'closed') {
+  if (config.forceStatus === 'closed') {
     return { isOpen: false, label: config.forceLabel || 'Temporariamente fechado' };
   }
 
-  const openDays = config?.openDays ?? [1, 2, 3, 4, 5, 6];
-  const [openH, openM] = (config?.openTime ?? '09:00').split(':').map(Number);
-  const [closeH, closeM] = (config?.closeTime ?? '18:00').split(':').map(Number);
+  const openDays = config.dias ?? [1, 2, 3, 4, 5, 6];
+  const [openH, openM] = (config.abre ?? '09:00').split(':').map(Number);
+  const [closeH, closeM] = (config.fecha ?? '18:00').split(':').map(Number);
 
   const day = now.getDay();
   const currentMin = now.getHours() * 60 + now.getMinutes();
@@ -28,8 +33,8 @@ export function getStoreStatus(now = new Date()) {
   const closeMin = closeH * 60 + closeM;
   const isOpen = openDays.includes(day) && currentMin >= openMin && currentMin < closeMin;
 
-  const openLabel = config?.openTime ?? '09:00';
-  const closeLabel = config?.closeTime ?? '18:00';
+  const openLabel = config.abre ?? '09:00';
+  const closeLabel = config.fecha ?? '18:00';
 
   if (isOpen) return { isOpen: true, label: `Aberto · Fecha às ${closeLabel}` };
 

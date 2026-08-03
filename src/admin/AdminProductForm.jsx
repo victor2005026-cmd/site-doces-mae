@@ -1,6 +1,11 @@
 import { useId, useState } from 'react';
 import { CATEGORIES } from '../data/products';
-import { resizeImageFile } from '../lib/resizeImage';
+import {
+  comprimirImagemProduto,
+  deletarImagemProduto,
+  enviarImagemComprimida,
+  validarImagemProduto,
+} from '../lib/uploadImagem';
 import { useAdminProducts } from '../context/AdminProductsContext';
 
 const PRODUCT_CATEGORIES = CATEGORIES.filter((c) => c.id !== 'todos');
@@ -11,19 +16,33 @@ const EMPTY = {
   price: '',
   category: 'tradicionais',
   badge: '',
-  image: '',
-  alt: '',
 };
+
+function formatKB(bytes) {
+  return Math.max(1, Math.round(bytes / 1024));
+}
 
 export default function AdminProductForm({ product, onClose }) {
   const { addProduct, updateProduct } = useAdminProducts();
   const isEdit = Boolean(product);
+  const originalImageUrl = product?.image || '';
 
   const [form, setForm] = useState(() =>
     product
-      ? { ...product, price: String(product.price), badge: product.badge ?? '' }
+      ? {
+          name: product.name,
+          description: product.description,
+          price: String(product.price),
+          category: product.category,
+          badge: product.badge ?? '',
+        }
       : { ...EMPTY }
   );
+  const [previewUrl, setPreviewUrl] = useState(originalImageUrl);
+  const [compressedBlob, setCompressedBlob] = useState(null);
+  const [originalSizeKB, setOriginalSizeKB] = useState(null);
+  const [compressedSizeKB, setCompressedSizeKB] = useState(null);
+  const [compressing, setCompressing] = useState(false);
   const [imgError, setImgError] = useState('');
   const [saving, setSaving] = useState(false);
   const imgInputId = useId();
@@ -32,37 +51,73 @@ export default function AdminProductForm({ product, onClose }) {
 
   const handleFile = async (e) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
+
     setImgError('');
+    const erro = validarImagemProduto(file);
+    if (erro) {
+      setImgError(erro);
+      return;
+    }
+
+    setCompressedBlob(null);
+    setCompressedSizeKB(null);
+    setOriginalSizeKB(formatKB(file.size));
+    setPreviewUrl(URL.createObjectURL(file));
+    setCompressing(true);
     try {
-      const dataUrl = await resizeImageFile(file);
-      setForm((prev) => ({ ...prev, image: dataUrl, alt: prev.alt || prev.name || 'Foto do produto' }));
-    } catch {
-      setImgError('Não consegui carregar essa imagem. Tente outro arquivo.');
+      const blob = await comprimirImagemProduto(file);
+      setCompressedBlob(blob);
+      setCompressedSizeKB(formatKB(blob.size));
+    } catch (err) {
+      setImgError(err.message);
+      setPreviewUrl(originalImageUrl);
+      setOriginalSizeKB(null);
     } finally {
-      e.target.value = '';
+      setCompressing(false);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const data = {
-      name: form.name.trim(),
-      description: form.description.trim(),
-      price: parseFloat(form.price),
-      category: form.category,
-      image: form.image || '/images/prod-tradicional.jpg',
-      badge: form.badge.trim() || undefined,
-      active: product ? product.active : true,
-    };
+    if (compressing) return;
+
     setSaving(true);
-    const { error } = isEdit ? await updateProduct(product.id, data) : await addProduct(data);
-    setSaving(false);
-    if (error) {
-      setImgError('Não consegui salvar o produto. Tente de novo.');
-      return;
+    setImgError('');
+
+    try {
+      const produtoId = isEdit ? product.id : crypto.randomUUID();
+      let imageUrl = originalImageUrl;
+
+      if (compressedBlob) {
+        imageUrl = await enviarImagemComprimida(compressedBlob, produtoId);
+      }
+
+      const data = {
+        ...(isEdit ? {} : { id: produtoId }),
+        name: form.name.trim(),
+        description: form.description.trim(),
+        price: parseFloat(form.price),
+        category: form.category,
+        image: imageUrl || '/images/prod-tradicional.jpg',
+        badge: form.badge.trim() || undefined,
+        active: product ? product.active : true,
+      };
+
+      const { error } = isEdit ? await updateProduct(product.id, data) : await addProduct(data);
+      if (error) throw new Error('Não consegui salvar o produto. Tenta de novo.');
+
+      if (compressedBlob && originalImageUrl && originalImageUrl !== imageUrl) {
+        deletarImagemProduto(originalImageUrl);
+      }
+
+      onClose();
+    } catch (err) {
+      setImgError(err.message || 'Não consegui salvar o produto. Tenta de novo.');
+    } finally {
+      setSaving(false);
     }
-    onClose();
   };
 
   const inputClass =
@@ -86,20 +141,37 @@ export default function AdminProductForm({ product, onClose }) {
           <div>
             <p className={labelClass}>Foto</p>
             <div className="flex items-center gap-4">
-              {form.image && (
+              {previewUrl && (
                 <img
-                  src={form.image}
+                  src={previewUrl}
                   alt="preview"
                   className="h-16 w-16 flex-shrink-0 rounded-card object-cover"
                 />
               )}
-              <label
-                htmlFor={imgInputId}
-                className="cursor-pointer rounded-full border border-border-light px-4 py-2 text-[0.85rem] font-medium text-text-primary hover:border-rose hover:text-rose"
-              >
-                {form.image ? 'Trocar foto' : 'Escolher foto'}
-              </label>
-              <input id={imgInputId} type="file" accept="image/*" onChange={handleFile} className="hidden" />
+              <div>
+                <label
+                  htmlFor={imgInputId}
+                  className="cursor-pointer rounded-full border border-border-light px-4 py-2 text-[0.85rem] font-medium text-text-primary hover:border-rose hover:text-rose"
+                >
+                  {previewUrl ? 'Trocar foto' : 'Escolher foto'}
+                </label>
+                <input
+                  id={imgInputId}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={handleFile}
+                  className="hidden"
+                />
+                {originalSizeKB != null && (
+                  <p className="mt-1 text-[0.78rem] text-text-secondary">
+                    {compressing
+                      ? `Comprimindo... (original ${originalSizeKB} KB)`
+                      : compressedSizeKB != null
+                        ? `${originalSizeKB} KB → ${compressedSizeKB} KB`
+                        : `${originalSizeKB} KB`}
+                  </p>
+                )}
+              </div>
             </div>
             {imgError && <p className="mt-1 text-[0.8rem] text-rose-dark">{imgError}</p>}
           </div>
@@ -169,7 +241,7 @@ export default function AdminProductForm({ product, onClose }) {
           <div className="mt-2 flex gap-3">
             <button
               type="submit"
-              disabled={saving}
+              disabled={saving || compressing}
               className="flex-1 rounded-full bg-rose py-2.5 text-[0.95rem] font-semibold text-white hover:bg-rose-dark disabled:opacity-60"
             >
               {saving ? 'Salvando...' : isEdit ? 'Salvar alterações' : 'Adicionar produto'}

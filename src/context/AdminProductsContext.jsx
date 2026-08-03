@@ -2,8 +2,6 @@ import { createContext, useCallback, useContext, useEffect, useState } from 'rea
 import { supabase } from '../lib/supabase';
 import { PRODUCTS } from '../data/products';
 
-const HOURS_KEY = 'docesdaale:admin-hours';
-
 export const DEFAULT_HOURS = {
   openDays: [1, 2, 3, 4, 5, 6],
   openTime: '09:00',
@@ -12,12 +10,26 @@ export const DEFAULT_HOURS = {
   forceLabel: '',
 };
 
-function loadHours() {
-  try {
-    const raw = localStorage.getItem(HOURS_KEY);
-    if (raw) return { ...DEFAULT_HOURS, ...JSON.parse(raw) };
-  } catch {}
-  return { ...DEFAULT_HOURS };
+// converte o jsonb `configuracoes.horario_funcionamento` para o formato usado no form do admin
+function horarioToHours(horarioFuncionamento) {
+  const h = horarioFuncionamento ?? {};
+  return {
+    openDays: h.dias ?? DEFAULT_HOURS.openDays,
+    openTime: h.abre ?? DEFAULT_HOURS.openTime,
+    closeTime: h.fecha ?? DEFAULT_HOURS.closeTime,
+    forceStatus: h.forceStatus ?? DEFAULT_HOURS.forceStatus,
+    forceLabel: h.forceLabel ?? DEFAULT_HOURS.forceLabel,
+  };
+}
+
+function hoursToHorario(hours) {
+  return {
+    dias: hours.openDays,
+    abre: hours.openTime,
+    fecha: hours.closeTime,
+    forceStatus: hours.forceStatus,
+    forceLabel: hours.forceLabel,
+  };
 }
 
 // data/products.js só entra em cena se a busca no Supabase falhar (ex: fora do ar)
@@ -41,6 +53,7 @@ function rowToProduct(row) {
 
 function productToRow(data) {
   const row = {};
+  if (data.id !== undefined) row.id = data.id;
   if (data.name !== undefined) row.nome = data.name;
   if (data.description !== undefined) row.descricao = data.description;
   if (data.price !== undefined) row.preco = data.price;
@@ -57,7 +70,7 @@ const AdminProductsContext = createContext(null);
 export function AdminProductsProvider({ children }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [hours, setHoursState] = useState(loadHours);
+  const [config, setConfig] = useState(null);
 
   const fetchProducts = useCallback(async () => {
     const { data, error } = await supabase.from('produtos').select('*').order('ordem', { ascending: true });
@@ -68,6 +81,12 @@ export function AdminProductsProvider({ children }) {
       setProducts((data ?? []).map(rowToProduct));
     }
     setLoading(false);
+  }, []);
+
+  const fetchConfig = useCallback(async () => {
+    const { data, error } = await supabase.from('configuracoes').select('*').eq('id', 1).single();
+    if (error) console.error('Erro ao buscar configurações:', error);
+    else setConfig(data);
   }, []);
 
   useEffect(() => {
@@ -85,9 +104,37 @@ export function AdminProductsProvider({ children }) {
     };
   }, [fetchProducts]);
 
-  const saveHours = (config) => {
-    setHoursState(config);
-    localStorage.setItem(HOURS_KEY, JSON.stringify(config));
+  useEffect(() => {
+    fetchConfig();
+
+    const channel = supabase
+      .channel('configuracoes-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'configuracoes' }, () => {
+        fetchConfig();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchConfig]);
+
+  const hours = horarioToHours(config?.horario_funcionamento);
+
+  const saveHours = async (newHours) => {
+    const horario_funcionamento = hoursToHorario(newHours);
+    setConfig((prev) => (prev ? { ...prev, horario_funcionamento } : prev));
+    const { error } = await supabase.from('configuracoes').update({ horario_funcionamento }).eq('id', 1);
+    if (error) console.error('Erro ao salvar horário:', error);
+    return { error };
+  };
+
+  // campo: 'banner_url' | 'logo_url' | 'banner_secundario_url'
+  const saveImagemSite = async (campo, url) => {
+    setConfig((prev) => (prev ? { ...prev, [campo]: url } : prev));
+    const { error } = await supabase.from('configuracoes').update({ [campo]: url }).eq('id', 1);
+    if (error) console.error('Erro ao salvar imagem do site:', error);
+    return { error };
   };
 
   const addProduct = async (data) => {
@@ -131,12 +178,14 @@ export function AdminProductsProvider({ children }) {
         activeProducts,
         loading,
         hours,
+        config,
         addProduct,
         updateProduct,
         deleteProduct,
         toggleActive,
         toggleMostSold,
         saveHours,
+        saveImagemSite,
       }}
     >
       {children}

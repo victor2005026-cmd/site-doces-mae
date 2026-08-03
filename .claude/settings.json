@@ -1,7 +1,16 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm -v)"
+      "Bash(npm -v)",
+      "Bash(npm run *)",
+      "Bash(curl -s http://localhost:3000/static/js/bundle.js)",
+      "Bash(node test-scroll-deep.js)",
+      "Bash(node test-scroll-mobile-drawer.js)",
+      "Bash(lsof -i :3000 -sTCP:LISTEN)",
+      "Bash(lsof -i :3001 -sTCP:LISTEN)",
+      "Bash(node test-cart-scroll.js)",
+      "Bash(npm install *)",
+      "Bash(node -e ' *)"
     ]
   }
 }

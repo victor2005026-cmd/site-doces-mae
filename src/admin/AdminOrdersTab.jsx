@@ -2,9 +2,27 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { formatPrice } from '../data/products';
 import { waLink } from '../lib/whatsapp';
+import { isoDateLocal } from '../lib/dateUtils';
 import { useAdminProducts } from '../context/AdminProductsContext';
+import { ULTIMA_VISTA_KEY } from './AdminDashboard';
+
+const UMA_HORA_MS = 60 * 60 * 1000;
+
+// "Novo": chegou na última hora E depois da última vez que ela abriu a aba Pedidos
+function ehPedidoNovo(pedido) {
+  const criadoEm = new Date(pedido.created_at).getTime();
+  if (Date.now() - criadoEm > UMA_HORA_MS) return false;
+  try {
+    const vistoEm = localStorage.getItem(ULTIMA_VISTA_KEY);
+    return !vistoEm || criadoEm > new Date(vistoEm).getTime();
+  } catch {
+    return true;
+  }
+}
 
 const STATUS_FLOW = {
+  aguardando_pagamento:             { label: 'Aguardando pagamento',  next: null, nextLabel: null, color: 'bg-gold/20 text-gold' },
+  aguardando_confirmacao_pagamento: { label: 'Aguardando confirmação',next: null, nextLabel: null, color: 'bg-gold/30 text-gold' },
   recebido:     { label: 'Recebido',      next: 'confirmado',  nextLabel: 'Confirmar',       color: 'bg-gold/20 text-gold' },
   confirmado:   { label: 'Confirmado',    next: 'preparando',  nextLabel: 'Preparando',      color: 'bg-blue-100 text-blue-700' },
   preparando:   { label: 'Preparando',    next: 'pronto',      nextLabel: 'Pronto',          color: 'bg-blue-100 text-blue-700' },
@@ -110,14 +128,6 @@ function NovoManualModal({ produtos, onClose, onSaved }) {
                 <option value="entrega">Entrega</option>
               </select>
             </div>
-            <div>
-              <label className="mb-1 block text-[0.82rem] font-medium">Pagamento</label>
-              <select value={form.pagamento} onChange={(e) => setForm((p) => ({ ...p, pagamento: e.target.value }))} className={ic}>
-                <option value="pix">Pix</option>
-                <option value="dinheiro">Dinheiro</option>
-                <option value="cartao">Cartão</option>
-              </select>
-            </div>
           </div>
 
           {/* Itens */}
@@ -165,11 +175,25 @@ export default function AdminOrdersTab() {
   const [filtroStatus, setFiltroStatus] = useState('');
   const [showManual, setShowManual] = useState(false);
   const [produtosDB, setProdutosDB] = useState([]);
+  const [aguardandoCount, setAguardandoCount] = useState(0);
+  const [aguardandoPagamentoCount, setAguardandoPagamentoCount] = useState(0);
+
+  // Verificação client-side do "job": se ninguém rodou um cron pra cancelar
+  // pedidos com Pix expirado, isso cancela ao carregar a lista do admin.
+  const cancelarExpirados = async () => {
+    await supabase
+      .from('pedidos')
+      .update({ status: 'cancelado' })
+      .eq('status', 'aguardando_pagamento')
+      .lt('data_expiracao_pagamento', new Date().toISOString());
+  };
 
   const fetchPedidos = async () => {
-    const hoje = new Date().toISOString().split('T')[0];
-    const amanha = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-    const semanaFim = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+    const hoje = isoDateLocal(new Date());
+    const amanha = isoDateLocal(new Date(Date.now() + 86400000));
+    const semanaFim = isoDateLocal(new Date(Date.now() + 7 * 86400000));
+
+    await cancelarExpirados();
 
     let query = supabase.from('pedidos').select('*, itens_pedido(*), perfis(nome, telefone_formatado)').order('data_agendada').order('created_at', { ascending: false });
 
@@ -179,12 +203,42 @@ export default function AdminOrdersTab() {
 
     if (filtroStatus) query = query.eq('status', filtroStatus);
 
-    const { data } = await query.limit(50);
+    const { data, error } = await query.limit(50);
+    if (error) console.error('Erro ao buscar pedidos:', error);
     setPedidos(data ?? []);
     setLoading(false);
   };
 
+  // Contagens independentes de filtroData/filtroStatus: pedidos aguardando
+  // pagamento/confirmação podem ter data de entrega futura e não aparecer
+  // no filtro "Hoje" por padrão.
+  const fetchAguardandoCount = async () => {
+    const { count, error } = await supabase
+      .from('pedidos')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'aguardando_confirmacao_pagamento');
+    if (!error) setAguardandoCount(count ?? 0);
+
+    const { count: countPagamento, error: errPagamento } = await supabase
+      .from('pedidos')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'aguardando_pagamento');
+    if (!errPagamento) setAguardandoPagamentoCount(countPagamento ?? 0);
+  };
+
   useEffect(() => { fetchPedidos(); }, [filtroData, filtroStatus]); // eslint-disable-line
+
+  useEffect(() => {
+    fetchAguardandoCount();
+    const channel = supabase
+      .channel('pedidos-aguardando-pagamento')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'pedidos' }, () => {
+        fetchAguardandoCount();
+        fetchPedidos();
+      })
+      .subscribe();
+    return () => supabase.removeChannel(channel);
+  }, []); // eslint-disable-line
 
   useEffect(() => {
     supabase.from('produtos').select('id, nome, preco').eq('ativo', true).then(({ data }) => {
@@ -193,11 +247,34 @@ export default function AdminOrdersTab() {
     });
   }, []); // eslint-disable-line
 
+  const verAguardandoConfirmacao = () => {
+    setFiltroData('Todos');
+    setFiltroStatus('aguardando_confirmacao_pagamento');
+  };
+
+  const verAguardandoPagamento = () => {
+    setFiltroData('Todos');
+    setFiltroStatus('aguardando_pagamento');
+  };
+
   const avancarStatus = async (pedido) => {
     const info = STATUS_FLOW[pedido.status];
     if (!info?.next) return;
     await supabase.from('pedidos').update({ status: info.next, ...(info.next === 'confirmado' ? { confirmado_em: new Date().toISOString() } : {}) }).eq('id', pedido.id);
     fetchPedidos();
+  };
+
+  const confirmarPagamento = async (pedido) => {
+    await supabase.from('pedidos').update({ status: 'recebido', pago: true, pago_em: new Date().toISOString() }).eq('id', pedido.id);
+    fetchPedidos();
+    fetchAguardandoCount();
+  };
+
+  const rejeitarPagamento = async (pedido) => {
+    if (!window.confirm(`Rejeitar o pagamento do pedido ${pedido.numero_pedido}? O pedido será cancelado.`)) return;
+    await supabase.from('pedidos').update({ status: 'cancelado' }).eq('id', pedido.id);
+    fetchPedidos();
+    fetchAguardandoCount();
   };
 
   const cancelar = async (pedido) => {
@@ -231,6 +308,26 @@ export default function AdminOrdersTab() {
           + Novo pedido manual
         </button>
       </div>
+
+      {aguardandoCount > 0 && (
+        <button
+          type="button"
+          onClick={verAguardandoConfirmacao}
+          className="mb-3 flex w-full items-center justify-center gap-2 rounded-card border-2 border-gold bg-gold/10 px-4 py-3 text-[0.9rem] font-semibold text-gold-dark hover:bg-gold/20"
+        >
+          {aguardandoCount} pedido{aguardandoCount > 1 ? 's' : ''} aguardando confirmação de pagamento
+        </button>
+      )}
+
+      {aguardandoPagamentoCount > 0 && (
+        <button
+          type="button"
+          onClick={verAguardandoPagamento}
+          className="mb-4 flex w-full items-center justify-center gap-2 rounded-card border border-gold/40 bg-bg-alt px-4 py-2.5 text-[0.85rem] font-medium text-text-secondary hover:bg-gold/10"
+        >
+          {aguardandoPagamentoCount} pedido{aguardandoPagamentoCount > 1 ? 's' : ''} aguardando pagamento
+        </button>
+      )}
 
       {/* Filtros */}
       <div className="mb-4 flex flex-wrap gap-2">
@@ -273,6 +370,11 @@ export default function AdminOrdersTab() {
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="font-heading font-bold text-text-primary">{pedido.numero_pedido}</p>
+                      {ehPedidoNovo(pedido) && (
+                        <span className="flex items-center gap-1 rounded-full bg-rose px-2 py-0.5 text-[0.7rem] font-bold text-white">
+                          <span className="h-1.5 w-1.5 rounded-full bg-white" /> Novo
+                        </span>
+                      )}
                       <span className={`rounded-full px-2 py-0.5 text-[0.7rem] font-semibold ${info.color}`}>{info.label}</span>
                       <span className={`rounded-full px-2 py-0.5 text-[0.7rem] font-semibold ${origemInfo}`}>{ORIGENS[pedido.origem] ?? pedido.origem}</span>
                     </div>
@@ -292,6 +394,24 @@ export default function AdminOrdersTab() {
                 {pedido.observacoes && <p className="mb-3 text-[0.82rem] italic text-text-secondary">"{pedido.observacoes}"</p>}
 
                 {/* Ações */}
+                {pedido.status === 'aguardando_confirmacao_pagamento' && (
+                  <div className="mb-3 flex flex-wrap gap-2 rounded-card bg-gold/10 p-3">
+                    <button
+                      type="button"
+                      onClick={() => confirmarPagamento(pedido)}
+                      className="flex-1 rounded-full bg-success px-4 py-2.5 text-[0.9rem] font-bold text-white hover:bg-[#268a41]"
+                    >
+                      Confirmar pagamento
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => rejeitarPagamento(pedido)}
+                      className="flex-1 rounded-full border border-rose/40 px-4 py-2.5 text-[0.9rem] font-bold text-rose-dark hover:border-rose"
+                    >
+                      Rejeitar (pagamento não caiu)
+                    </button>
+                  </div>
+                )}
                 <div className="flex flex-wrap gap-2">
                   {info.nextLabel && (
                     <button

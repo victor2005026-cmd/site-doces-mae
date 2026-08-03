@@ -7,6 +7,13 @@ const inputClass =
 const labelClass = 'mb-1 block text-[0.85rem] font-medium text-text-primary';
 const errorClass = 'mt-1 text-[0.8rem] text-rose-dark';
 
+function maskEmail(email) {
+  const [local, domain] = email.split('@');
+  const [domainName, ...domainRest] = domain.split('.');
+  const mask = (s) => (s.length <= 2 ? `${s[0]}*` : `${s[0]}${'*'.repeat(Math.max(1, s.length - 2))}${s[s.length - 1]}`);
+  return `${mask(local)}@${mask(domainName)}.${domainRest.join('.')}`;
+}
+
 function LoginForm({ onSuccess, onForgot }) {
   const { login } = useAuth();
   const [tel, setTel] = useState('');
@@ -39,6 +46,7 @@ function LoginForm({ onSuccess, onForgot }) {
         <input
           id="login-tel"
           type="tel"
+          inputMode="numeric"
           value={formatarTelefone(tel)}
           onChange={(e) => setTel(e.target.value)}
           placeholder="(13) 99999-9999"
@@ -77,10 +85,11 @@ function LoginForm({ onSuccess, onForgot }) {
 }
 
 function CadastroForm({ onSuccess }) {
-  const { cadastrar } = useAuth();
-  const [form, setForm] = useState({ nome: '', tel: '', senha: '', confirma: '' });
+  const { cadastrar, solicitarEmailRecuperacao } = useAuth();
+  const [form, setForm] = useState({ nome: '', tel: '', email: '', senha: '', confirma: '' });
   const [erro, setErro] = useState('');
   const [loading, setLoading] = useState(false);
+  const [contaCriada, setContaCriada] = useState(false);
   const honeypotRef = useRef(null);
 
   const set = (f) => (e) => setForm((p) => ({ ...p, [f]: e.target.value }));
@@ -104,6 +113,20 @@ function CadastroForm({ onSuccess }) {
         telefoneFormatado: formatarTelefone(form.tel),
         senha: form.senha,
       });
+
+      if (form.email.trim()) {
+        const { error: emailError } = await solicitarEmailRecuperacao(form.email.trim());
+        if (emailError) {
+          setContaCriada(true);
+          setErro('Conta criada! Mas não consegui associar esse e-mail (talvez já esteja em uso por outra conta). Você pode tentar de novo em "Meu perfil".');
+          setLoading(false);
+          return;
+        }
+        setContaCriada(true);
+        setLoading(false);
+        return;
+      }
+
       onSuccess();
     } catch (err) {
       if (err.message?.includes('already registered')) {
@@ -115,6 +138,29 @@ function CadastroForm({ onSuccess }) {
       setLoading(false);
     }
   };
+
+  if (contaCriada) {
+    return (
+      <div className="flex flex-col gap-4 text-center">
+        <p className="text-[1.5rem]">✓</p>
+        <p className="font-semibold text-text-primary">Conta criada com sucesso!</p>
+        {!erro && form.email.trim() && (
+          <p className="text-[0.88rem] text-text-secondary">
+            Enviamos um link de confirmação pra <strong>{maskEmail(form.email.trim())}</strong>. Clique nele
+            pra habilitar a recuperação de senha automática por e-mail.
+          </p>
+        )}
+        {erro && <p className={errorClass}>{erro}</p>}
+        <button
+          type="button"
+          onClick={onSuccess}
+          className="rounded-full bg-rose py-2.5 text-[0.95rem] font-semibold text-white hover:bg-rose-dark"
+        >
+          Continuar
+        </button>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -130,10 +176,25 @@ function CadastroForm({ onSuccess }) {
         <input
           id="cad-tel"
           type="tel"
+          inputMode="numeric"
           value={formatarTelefone(form.tel)}
           onChange={(e) => setForm((p) => ({ ...p, tel: e.target.value }))}
           placeholder="(13) 99999-9999"
           autoComplete="tel"
+          className={inputClass}
+        />
+      </div>
+      <div>
+        <label htmlFor="cad-email" className={labelClass}>
+          E-mail <span className="font-normal text-text-secondary">(opcional — pra recuperar senha sozinho)</span>
+        </label>
+        <input
+          id="cad-email"
+          type="email"
+          value={form.email}
+          onChange={set('email')}
+          placeholder="seuemail@exemplo.com"
+          autoComplete="email"
           className={inputClass}
         />
       </div>
@@ -171,60 +232,177 @@ function CadastroForm({ onSuccess }) {
   );
 }
 
+function RecuperarSenhaView({ onVoltar }) {
+  const { buscarRecuperacaoSenha, enviarLinkResetSenha } = useAuth();
+  const [tel, setTel] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [erro, setErro] = useState('');
+  const [resultado, setResultado] = useState(null); // 'nao-encontrado' | 'sem-email' | { email }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErro('');
+    setResultado(null);
+    if (!validarTelefone(tel)) {
+      setErro('Telefone inválido. Use DDD + número (ex: 13912345678).');
+      return;
+    }
+    setLoading(true);
+    const { encontrado, email, error } = await buscarRecuperacaoSenha(tel);
+    if (error) {
+      setErro('Não consegui verificar esse telefone agora. Tente novamente.');
+      setLoading(false);
+      return;
+    }
+    if (!encontrado) {
+      setResultado('nao-encontrado');
+      setLoading(false);
+      return;
+    }
+    if (!email) {
+      setResultado('sem-email');
+      setLoading(false);
+      return;
+    }
+    const { error: sendError } = await enviarLinkResetSenha(email);
+    setLoading(false);
+    if (sendError) {
+      setErro('Não consegui enviar o e-mail agora. Tente novamente em instantes.');
+      return;
+    }
+    setResultado({ email });
+  };
+
+  if (resultado === 'nao-encontrado') {
+    return (
+      <div className="flex flex-col gap-4 text-center">
+        <p className="text-[0.92rem] text-text-primary">Telefone não encontrado. Verifique o número ou crie uma conta.</p>
+        <button type="button" onClick={onVoltar} className="text-[0.85rem] text-rose underline">← Voltar</button>
+      </div>
+    );
+  }
+
+  if (resultado === 'sem-email') {
+    return (
+      <div className="flex flex-col gap-4 text-center">
+        <p className="text-[0.92rem] text-text-primary">
+          Esse telefone ainda não tem e-mail cadastrado pra recuperação automática.
+        </p>
+        <a
+          href={waLink('Olá! Esqueci minha senha da conta Doces da Ale. Pode me ajudar?')}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-full bg-success py-2.5 text-center text-[0.9rem] font-semibold text-white hover:bg-[#268a41]"
+        >
+          Falar no WhatsApp
+        </a>
+        <button type="button" onClick={onVoltar} className="text-[0.85rem] text-text-secondary underline">← Voltar</button>
+      </div>
+    );
+  }
+
+  if (resultado?.email) {
+    return (
+      <div className="flex flex-col gap-4 text-center">
+        <p className="text-[1.5rem]">✓</p>
+        <p className="text-[0.92rem] text-text-primary">
+          Enviamos um link pra <strong>{maskEmail(resultado.email)}</strong>. Clique nele pra criar uma nova senha.
+        </p>
+        <button type="button" onClick={onVoltar} className="text-[0.85rem] text-rose underline">← Voltar ao login</button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <p className="text-[0.85rem] text-text-secondary">Digite seu telefone pra recuperar o acesso à sua conta.</p>
+      <div>
+        <label htmlFor="rec-tel" className={labelClass}>Telefone / WhatsApp</label>
+        <input
+          id="rec-tel"
+          type="tel"
+          inputMode="numeric"
+          value={formatarTelefone(tel)}
+          onChange={(e) => setTel(e.target.value)}
+          placeholder="(13) 99999-9999"
+          autoComplete="tel"
+          className={inputClass}
+        />
+      </div>
+      {erro && <p className={errorClass}>{erro}</p>}
+      <button
+        type="submit"
+        disabled={loading}
+        className="rounded-full bg-rose py-2.5 text-[0.95rem] font-semibold text-white transition-colors hover:bg-rose-dark disabled:opacity-60"
+      >
+        {loading ? 'Verificando…' : 'Continuar'}
+      </button>
+      <button type="button" onClick={onVoltar} className="text-[0.85rem] text-text-secondary underline">← Voltar ao login</button>
+    </form>
+  );
+}
+
 export default function AuthModal({ isOpen, initialTab = 'login', onClose }) {
   const [tab, setTab] = useState(initialTab);
-  const { perfil } = useAuth();
+  const [view, setView] = useState('form'); // 'form' | 'recuperar'
 
   if (!isOpen) return null;
 
   const handleSuccess = () => onClose();
 
-  const handleForgot = () => {
+  const handleClose = () => {
+    setView('form');
     onClose();
-    window.open(
-      waLink(`Olá! Esqueci minha senha da conta Doces da Ale. Pode me ajudar?`),
-      '_blank'
-    );
   };
 
   return (
     <div
       className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
     >
       <div className="w-full max-w-[400px] rounded-card bg-bg-main p-6 shadow-lg">
         <div className="mb-5 flex items-center justify-between">
-          <div className="flex gap-1 rounded-full border border-border-light p-1">
-            {['login', 'cadastro'].map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setTab(t)}
-                className={`rounded-full px-4 py-1.5 text-[0.85rem] font-medium transition-colors ${
-                  tab === t ? 'bg-rose text-white' : 'text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                {t === 'login' ? 'Entrar' : 'Criar conta'}
-              </button>
-            ))}
-          </div>
-          <button type="button" onClick={onClose} className="text-[1.2rem] text-text-secondary hover:text-rose">
+          {view === 'form' ? (
+            <div className="flex gap-1 rounded-full border border-border-light p-1">
+              {['login', 'cadastro'].map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTab(t)}
+                  className={`rounded-full px-4 py-1.5 text-[0.85rem] font-medium transition-colors ${
+                    tab === t ? 'bg-rose text-white' : 'text-text-secondary hover:text-text-primary'
+                  }`}
+                >
+                  {t === 'login' ? 'Entrar' : 'Criar conta'}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <h2 className="font-heading text-[1.05rem] font-semibold text-text-primary">Recuperar senha</h2>
+          )}
+          <button type="button" onClick={handleClose} className="text-[1.2rem] text-text-secondary hover:text-rose">
             ×
           </button>
         </div>
 
-        {tab === 'login'
-          ? <LoginForm onSuccess={handleSuccess} onForgot={handleForgot} />
-          : <CadastroForm onSuccess={handleSuccess} />
-        }
+        {view === 'recuperar' ? (
+          <RecuperarSenhaView onVoltar={() => setView('form')} />
+        ) : (
+          <>
+            {tab === 'login'
+              ? <LoginForm onSuccess={handleSuccess} onForgot={() => setView('recuperar')} />
+              : <CadastroForm onSuccess={handleSuccess} />
+            }
 
-        {tab === 'login' && (
-          <p className="mt-4 text-center text-[0.82rem] text-text-secondary">
-            Não tem conta?{' '}
-            <button type="button" onClick={() => setTab('cadastro')} className="text-rose underline">
-              Criar agora
-            </button>
-          </p>
+            {tab === 'login' && (
+              <p className="mt-4 text-center text-[0.82rem] text-text-secondary">
+                Não tem conta?{' '}
+                <button type="button" onClick={() => setTab('cadastro')} className="text-rose underline">
+                  Criar agora
+                </button>
+              </p>
+            )}
+          </>
         )}
       </div>
     </div>

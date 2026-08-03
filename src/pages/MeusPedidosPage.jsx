@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { formatPrice } from '../data/products';
@@ -63,23 +63,23 @@ export default function MeusPedidosPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center pt-[70px]">
+      <div className="flex min-h-screen items-center justify-center pt-[60px] md:pt-[70px]">
         <p className="text-text-secondary">Carregando seus pedidos…</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-bg-alt pt-[70px]">
+    <div className="min-h-screen bg-bg-alt pt-[60px] md:pt-[70px]">
       <div className="container-site max-w-2xl py-8">
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="font-heading text-[1.5rem] font-bold text-text-primary">Meus pedidos</h1>
             {primeiroNome && <p className="text-[0.85rem] text-text-secondary">Olá, {primeiroNome}!</p>}
           </div>
-          <a href="/" className="text-[0.85rem] text-text-secondary underline hover:text-rose">
+          <Link to="/" className="text-[0.85rem] text-text-secondary underline hover:text-rose">
             Ver cardápio
-          </a>
+          </Link>
         </div>
 
         {/* Filtros */}
@@ -100,9 +100,15 @@ export default function MeusPedidosPage() {
 
         {pedidosFiltrados.length === 0 ? (
           <div className="py-12 text-center text-text-secondary">
-            <p className="text-[1.5rem]">📦</p>
-            <p className="mt-2">Nenhum pedido encontrado.</p>
-            <a href="/" className="mt-3 inline-block text-rose underline">Fazer um pedido</a>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="mx-auto">
+              <path d="M21 8 12 3 3 8l9 5 9-5Z" />
+              <path d="M3 8v8l9 5 9-5V8" />
+              <path d="M12 13v8" />
+            </svg>
+            <p className="mt-3">
+              {pedidos.length === 0 ? 'Você ainda não fez nenhum pedido.' : 'Nenhum pedido encontrado nesse filtro.'}
+            </p>
+            <Link to="/" className="mt-3 inline-block text-rose underline">Fazer um pedido</Link>
           </div>
         ) : (
           <ul className="flex flex-col gap-4">
@@ -168,12 +174,12 @@ export default function MeusPedidosPage() {
               </div>
               {detalhe.observacoes && <p className="mt-2 italic">"{detalhe.observacoes}"</p>}
             </div>
-            <a
-              href={`/pedido/${detalhe.numero_pedido}`}
+            <Link
+              to={`/pedido/${detalhe.numero_pedido}`}
               className="mt-5 block rounded-full border border-border-light py-2 text-center text-[0.9rem] font-medium text-text-primary hover:border-rose hover:text-rose"
             >
               Ver página do pedido
-            </a>
+            </Link>
           </div>
         </div>
       )}

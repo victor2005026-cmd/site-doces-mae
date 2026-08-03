@@ -1,16 +1,25 @@
 import { useState } from 'react';
 import { formatPrice } from '../data/products';
 import { useAdminProducts } from '../context/AdminProductsContext';
+import { deletarImagemProduto } from '../lib/uploadImagem';
 import AdminProductForm from './AdminProductForm';
 
 export default function AdminProductList() {
   const { products, loading, toggleActive, toggleMostSold, deleteProduct } = useAdminProducts();
   const [editing, setEditing] = useState(null); // null | product | 'new'
+  const [deletingId, setDeletingId] = useState(null);
+  const [feedback, setFeedback] = useState('');
 
-  const handleDelete = (product) => {
-    if (window.confirm(`Excluir "${product.name}"? Essa ação não pode ser desfeita.`)) {
-      deleteProduct(product.id);
+  const handleDelete = async (product) => {
+    if (!window.confirm(`Excluir "${product.name}"? Essa ação não pode ser desfeita.`)) return;
+    setDeletingId(product.id);
+    const { error } = await deleteProduct(product.id);
+    if (!error) {
+      await deletarImagemProduto(product.image);
+      setFeedback(`"${product.name}" excluído.`);
+      setTimeout(() => setFeedback(''), 2500);
     }
+    setDeletingId(null);
   };
 
   return (
@@ -29,6 +38,7 @@ export default function AdminProductList() {
       {loading && (
         <p className="mb-3 text-[0.85rem] text-text-secondary">Carregando produtos...</p>
       )}
+      {feedback && <p className="mb-3 text-[0.85rem] text-success">{feedback}</p>}
 
       <ul className="rounded-card border border-border-light bg-bg-main">
         {products.map((product) => (
@@ -100,9 +110,10 @@ export default function AdminProductList() {
               <button
                 type="button"
                 onClick={() => handleDelete(product)}
-                className="rounded-full border border-border-light px-3 py-1.5 text-[0.78rem] font-medium text-rose-dark hover:border-rose-dark"
+                disabled={deletingId === product.id}
+                className="rounded-full border border-border-light px-3 py-1.5 text-[0.78rem] font-medium text-rose-dark hover:border-rose-dark disabled:opacity-60"
               >
-                Excluir
+                {deletingId === product.id ? 'Excluindo...' : 'Excluir'}
               </button>
             </div>
           </li>

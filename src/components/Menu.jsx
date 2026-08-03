@@ -3,6 +3,7 @@ import { CATEGORIES } from '../data/products';
 import { useAdminProducts } from '../context/AdminProductsContext';
 import CategoryBar from './CategoryBar';
 import ProductSection from './ProductSection';
+import ProductCardSkeleton from './ProductCardSkeleton';
 
 const GROUPS = CATEGORIES.filter((cat) => cat.id !== 'todos');
 const SCROLL_OFFSET = 140;
@@ -65,7 +66,13 @@ export default function Menu({ query = '' }) {
       <CategoryBar categories={CATEGORIES} active={active} onSelect={scrollToCategory} />
 
       {loading && (
-        <p className="container-site py-10 text-center text-text-secondary">Carregando cardápio...</p>
+        <div className="container-site py-8">
+          <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <ProductCardSkeleton key={i} />
+            ))}
+          </div>
+        </div>
       )}
 
       {!loading && !hasResults && (

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { formatPrice } from '../data/products';
+import { isoDateLocal } from '../lib/dateUtils';
 
 const ORIGENS = { site: 'Site', whatsapp: 'WhatsApp', instagram: 'Instagram', manual: 'Manual' };
 const ORIGEM_COLORS = { site: '#E8A0AB', whatsapp: '#2FA84F', instagram: '#C9A96E', manual: '#888888' };
@@ -35,8 +36,8 @@ export default function AdminStatsTab() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const hoje = new Date().toISOString().split('T')[0];
-    const em3Dias = new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0];
+    const hoje = isoDateLocal(new Date());
+    const em3Dias = isoDateLocal(new Date(Date.now() + 3 * 86400000));
 
     const fetchAll = async () => {
       const [{ data: pedidosHoje }, { data: prox }] = await Promise.all([

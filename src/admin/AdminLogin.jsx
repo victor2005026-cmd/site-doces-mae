@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth, formatarTelefone } from '../context/AuthContext';
 
 export default function AdminLogin({ onLogin }) {
@@ -71,7 +72,7 @@ export default function AdminLogin({ onLogin }) {
         </form>
 
         <p className="mt-4 text-center text-[0.75rem] text-text-secondary">
-          Acesso restrito · <a href="/" className="underline hover:text-rose">Voltar ao site</a>
+          Acesso restrito · <Link to="/" className="underline hover:text-rose">Voltar ao site</Link>
         </p>
       </div>
     </div>

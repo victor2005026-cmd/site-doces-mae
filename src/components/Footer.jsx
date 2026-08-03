@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { waLink } from '../lib/whatsapp';
 
 export default function Footer() {
@@ -27,10 +28,19 @@ export default function Footer() {
           </a>
         </div>
 
+        <div className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[0.8rem]">
+          <Link to="/politica-privacidade" className="text-text-secondary underline hover:text-rose">
+            Política de Privacidade
+          </Link>
+          <Link to="/termos-uso" className="text-text-secondary underline hover:text-rose">
+            Termos de Uso
+          </Link>
+        </div>
+
         <p className="text-[0.8rem] text-text-secondary">&copy; 2026 Doces da Ale. Todos os direitos reservados.</p>
-        <a href="/admin" className="text-[0.78rem] text-text-secondary underline hover:text-rose">
+        <Link to="/admin" className="text-[0.78rem] text-text-secondary underline hover:text-rose">
           Painel de imagens
-        </a>
+        </Link>
       </div>
     </footer>
   );
