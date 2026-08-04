@@ -10,6 +10,7 @@ import { gerarLinkGoogleMaps } from '../lib/mapsLink';
 import { waLink } from '../lib/whatsapp';
 import { isoDateLocal as isoDate } from '../lib/dateUtils';
 import { notificarPedidoNovoPorEmail } from '../lib/emailNotificacao';
+import { notificarPedidoNovoPorWhatsApp } from '../lib/whatsappNotificacao';
 import AuthModal from '../components/AuthModal';
 import Spinner from '../components/Spinner';
 import EnderecoAutocomplete from '../components/EnderecoAutocomplete';
@@ -883,6 +884,8 @@ export default function CheckoutPage() {
 
       // Não bloqueia nem falha o checkout se o e-mail não sair.
       notificarPedidoNovoPorEmail(config, pedido, itensPayload).catch(() => {});
+      // Também não bloqueia o checkout se o aviso no WhatsApp falhar.
+      notificarPedidoNovoPorWhatsApp(pedido.id).catch(() => {});
 
       if (clearCart) clearCart();
       navigate(`/pagamento/${pedido.numero_pedido}`);

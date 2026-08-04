@@ -360,7 +360,6 @@ export default function AdminOrdersTab() {
           {pedidos.map((pedido) => {
             const info = STATUS_FLOW[pedido.status] ?? { label: pedido.status, color: 'bg-bg-alt' };
             const cliente = pedido.dados_convidado?.nome ?? pedido.perfis?.nome ?? '—';
-            const telefone = pedido.dados_convidado?.telefone ?? '';
             const dataFmt = new Date(pedido.data_agendada + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
             const origemInfo = ORIGEM_COLORS[pedido.origem] ?? 'bg-bg-alt';
 

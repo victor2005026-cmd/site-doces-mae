@@ -92,6 +92,7 @@ CREATE TABLE IF NOT EXISTS public.pedidos (
   pago                    boolean     NOT NULL DEFAULT false,
   pago_em                 timestamptz,
   id_pagamento_externo    text,
+  notificacao_whatsapp_enviada_em timestamptz,
   confirmado_em           timestamptz,
   created_at              timestamptz NOT NULL DEFAULT now()
 );
@@ -130,7 +131,9 @@ CREATE TABLE IF NOT EXISTS public.configuracoes (
   notif_email_destino         text,   -- e-mail da Ale que recebe o aviso de pedido novo
   emailjs_service_id          text,   -- painel do EmailJS (emailjs.com) → Email Services
   emailjs_template_id         text,   -- painel do EmailJS → Email Templates
-  emailjs_public_key          text    -- painel do EmailJS → Account → General → Public Key
+  emailjs_public_key          text,   -- painel do EmailJS → Account → General → Public Key
+  notif_whatsapp_ativo        boolean NOT NULL DEFAULT false,
+  notif_whatsapp_numero       text    -- 11 dígitos; a API key fica em Secret, nunca nesta tabela
 );
 
 CREATE TABLE IF NOT EXISTS public.datas_bloqueadas (
@@ -541,3 +544,8 @@ ON CONFLICT (codigo) DO NOTHING;
 -- ALTER TABLE public.configuracoes ADD COLUMN IF NOT EXISTS emailjs_service_id text;
 -- ALTER TABLE public.configuracoes ADD COLUMN IF NOT EXISTS emailjs_template_id text;
 -- ALTER TABLE public.configuracoes ADD COLUMN IF NOT EXISTS emailjs_public_key text;
+--
+-- Notificação de pedido novo por WhatsApp (CallMeBot):
+-- ALTER TABLE public.configuracoes ADD COLUMN IF NOT EXISTS notif_whatsapp_ativo boolean NOT NULL DEFAULT false;
+-- ALTER TABLE public.configuracoes ADD COLUMN IF NOT EXISTS notif_whatsapp_numero text;
+-- ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS notificacao_whatsapp_enviada_em timestamptz;

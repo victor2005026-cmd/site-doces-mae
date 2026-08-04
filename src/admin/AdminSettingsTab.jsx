@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { gerarLinkGoogleMaps } from '../lib/mapsLink';
+import { enviarEmailTeste } from '../lib/emailNotificacao';
 
 const DIAS = [
   { id: 0, label: 'Dom' }, { id: 1, label: 'Seg' }, { id: 2, label: 'Ter' },
@@ -34,6 +35,8 @@ export default function AdminSettingsTab() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [pixErro, setPixErro] = useState('');
+  const [notifErro, setNotifErro] = useState('');
+  const [emailTeste, setEmailTeste] = useState({ enviando: false, mensagem: '', erro: false });
 
   useEffect(() => {
     supabase.from('configuracoes').select('*').eq('id', 1).single().then(({ data }) => {
@@ -59,14 +62,24 @@ export default function AdminSettingsTab() {
       setPixErro('O nome do favorecido precisa ter entre 2 e 25 caracteres.');
       return;
     }
+    const publicKey = (cfg.emailjs_public_key ?? '').trim();
+    if (cfg.notif_email_ativo && (!cfg.notif_email_destino || !cfg.emailjs_service_id || !cfg.emailjs_template_id || !publicKey)) {
+      setNotifErro('Preencha e-mail, Service ID, Template ID e Public Key para ativar as notificações por e-mail.');
+      return;
+    }
+    if (publicKey.startsWith('template_') || publicKey.startsWith('service_')) {
+      setNotifErro('A Public Key não pode ser um Template ID ou Service ID. Copie-a em EmailJS → Account → General → Public Key.');
+      return;
+    }
     setPixErro('');
+    setNotifErro('');
 
     setSaving(true);
 
     const linkMaps = cfg.link_google_maps || gerarLinkGoogleMaps(cfg.endereco_retirada);
     const pixChave = telefoneDigits ? `+55${telefoneDigits}` : null;
 
-    await supabase.from('configuracoes').update({
+    const { data: configuracaoSalva, error: saveError } = await supabase.from('configuracoes').update({
       antecedencia_minima_horas: cfg.antecedencia_minima_horas,
       taxa_entrega_padrao: cfg.taxa_entrega_padrao,
       endereco_retirada: cfg.endereco_retirada,
@@ -81,11 +94,21 @@ export default function AdminSettingsTab() {
       notif_email_destino: cfg.notif_email_destino || null,
       emailjs_service_id: cfg.emailjs_service_id || null,
       emailjs_template_id: cfg.emailjs_template_id || null,
-      emailjs_public_key: cfg.emailjs_public_key || null,
-    }).eq('id', 1);
+      emailjs_public_key: publicKey || null,
+      notif_whatsapp_ativo: cfg.notif_whatsapp_ativo ?? false,
+      notif_whatsapp_numero: cfg.notif_whatsapp_numero || null,
+    }).eq('id', 1).select().single();
 
-    setCfg((p) => ({ ...p, link_google_maps: linkMaps, pix_chave: pixChave, pix_tipo: pixChave ? 'celular' : null, pix_cidade: pixChave ? 'SANTOS' : null }));
     setSaving(false);
+    if (saveError) {
+      setNotifErro(`Não foi possível salvar as configurações: ${saveError.message}`);
+      return;
+    }
+
+    // Usa exatamente o que o Supabase gravou, evitando a tela mostrar um
+    // estado local diferente do que será carregado depois de um F5.
+    setCfg(configuracaoSalva);
+    setTelefonePix(pixChaveParaTelefone(configuracaoSalva.pix_chave));
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
@@ -117,6 +140,17 @@ export default function AdminSettingsTab() {
   const setEndereco = (f) => (e) => {
     setSaved(false);
     setCfg((p) => ({ ...p, endereco_retirada: { ...p.endereco_retirada, [f]: e.target.value } }));
+  };
+
+  const testarEmail = async () => {
+    setEmailTeste({ enviando: true, mensagem: '', erro: false });
+    const resultado = await enviarEmailTeste({ ...cfg, notif_email_ativo: true });
+    if (resultado.enviado) {
+      setEmailTeste({ enviando: false, mensagem: 'E-mail de teste enviado. Confira também a caixa de spam.', erro: false });
+      return;
+    }
+    const detalhe = resultado.erro?.text || resultado.erro?.message || resultado.motivo;
+    setEmailTeste({ enviando: false, mensagem: `Não foi possível enviar: ${detalhe}. Confira o Service ID, Template ID, Public Key e o destinatário no EmailJS.`, erro: true });
   };
 
   if (loading || !cfg) return <p className="py-8 text-center text-text-secondary">Carregando…</p>;
@@ -295,16 +329,60 @@ export default function AdminSettingsTab() {
             </div>
             <div>
               <label className={lbl}>Service ID</label>
-              <input value={cfg.emailjs_service_id ?? ''} onChange={setField('emailjs_service_id')} placeholder="service_xxxxxxx" className={ic} />
+              <input name="emailjs-service-id" autoComplete="off" spellCheck={false} value={cfg.emailjs_service_id ?? ''} onChange={setField('emailjs_service_id')} placeholder="service_xxxxxxx" className={ic} />
             </div>
             <div>
               <label className={lbl}>Template ID</label>
-              <input value={cfg.emailjs_template_id ?? ''} onChange={setField('emailjs_template_id')} placeholder="template_xxxxxxx" className={ic} />
+              <input name="emailjs-template-id" autoComplete="off" spellCheck={false} value={cfg.emailjs_template_id ?? ''} onChange={setField('emailjs_template_id')} placeholder="template_xxxxxxx" className={ic} />
             </div>
             <div>
               <label className={lbl}>Public Key</label>
-              <input value={cfg.emailjs_public_key ?? ''} onChange={setField('emailjs_public_key')} placeholder="xXxXxXxXxXxXxXxXx" className={ic} />
+              <input name="emailjs-public-key" autoComplete="off" spellCheck={false} value={cfg.emailjs_public_key ?? ''} onChange={setField('emailjs_public_key')} placeholder="xXxXxXxXxXxXxXxXx" className={ic} />
             </div>
+          </div>
+          {notifErro && <p className="mt-3 text-[0.82rem] text-rose-dark">{notifErro}</p>}
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={testarEmail}
+              disabled={emailTeste.enviando}
+              className="rounded-full border border-rose px-4 py-2 text-[0.84rem] font-semibold text-rose transition-colors hover:bg-rose hover:text-white disabled:opacity-60"
+            >
+              {emailTeste.enviando ? 'Enviando teste…' : 'Enviar e-mail de teste'}
+            </button>
+            {emailTeste.mensagem && (
+              <p className={`text-[0.8rem] ${emailTeste.erro ? 'text-rose-dark' : 'text-success'}`}>{emailTeste.mensagem}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Notificação de pedido novo por WhatsApp */}
+        <div className="rounded-card border border-border-light bg-bg-main p-5">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h3 className="font-heading text-[0.95rem] font-semibold text-text-primary">Notificação de pedido novo no WhatsApp</h3>
+            <button
+              type="button"
+              onClick={() => { setSaved(false); setCfg((p) => ({ ...p, notif_whatsapp_ativo: !p.notif_whatsapp_ativo })); }}
+              className={`rounded-full border px-4 py-1.5 text-[0.82rem] font-medium transition-colors ${
+                cfg.notif_whatsapp_ativo ? 'border-success/40 bg-success/10 text-success' : 'border-border-light text-text-secondary'
+              }`}
+            >
+              {cfg.notif_whatsapp_ativo ? 'Ativada' : 'Desativada'}
+            </button>
+          </div>
+          <p className="mb-4 text-[0.8rem] text-text-secondary">
+            O CallMeBot enviará um aviso para este número a cada pedido criado. A chave da API não fica no site: ela é configurada como segredo da Edge Function do Supabase.
+          </p>
+          <div className="max-w-sm">
+            <label className={lbl}>Seu WhatsApp para receber os avisos</label>
+            <input
+              type="tel"
+              inputMode="numeric"
+              value={formatarTelefone(cfg.notif_whatsapp_numero ?? '')}
+              onChange={(e) => { setSaved(false); setCfg((p) => ({ ...p, notif_whatsapp_numero: e.target.value.replace(/\D/g, '').slice(0, 11) })); }}
+              placeholder="(13) 99174-9391"
+              className={ic}
+            />
           </div>
         </div>
 

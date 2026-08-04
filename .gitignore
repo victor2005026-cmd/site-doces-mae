@@ -7,3 +7,4 @@ build/
 *.log
 reference-images/
 shots/
+supabase/.temp/
