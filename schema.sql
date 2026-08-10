@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS public.produtos (
   nome          text        NOT NULL,
   descricao     text,
   preco         numeric     NOT NULL,
-  categoria     text        NOT NULL,   -- tradicionais | gourmet | caixas | personalizados
+  categoria     text        NOT NULL,   -- gourmet | caixas
   imagem_url    text,
   ativo         boolean     NOT NULL DEFAULT true,
   mais_vendido  boolean     NOT NULL DEFAULT false,
@@ -378,11 +378,11 @@ ON CONFLICT (id) DO NOTHING;
 
 -- Produtos baseados no cardápio atual
 INSERT INTO public.produtos (nome, descricao, preco, categoria, imagem_url, ativo, mais_vendido, ordem) VALUES
-('Tradicional',       'O brigadeiro clássico de sempre, com granulado de chocolate',     4.50,  'tradicionais', '/images/prod-tradicional.jpg',   true, false, 1),
-('Beijinho',          'Coco com leite condensado, docinho de carinho',                   4.50,  'tradicionais', '/images/prod-beijinho.jpg',       true, false, 2),
-('Paçoca',            'Amendoim torrado moído em textura crocante',                      5.00,  'tradicionais', '/images/prod-pacoca.jpg',         true, false, 3),
-('Maracujá',          'Acidez tropical equilibrando o doce do chocolate',                5.00,  'tradicionais', '/images/prod-maracuja.jpg',       true, false, 4),
-('Romeu e Julieta',   'Goiabada e queijo, combinação clássica brasileira',               5.50,  'tradicionais', '/images/prod-romeu-julieta.jpg',  true, false, 5),
+('Tradicional',       'O brigadeiro clássico de sempre, com granulado de chocolate',     4.50,  'gourmet', '/images/prod-tradicional.jpg',   true, false, 1),
+('Beijinho',          'Coco com leite condensado, docinho de carinho',                   4.50,  'gourmet', '/images/prod-beijinho.jpg',       true, false, 2),
+('Paçoca',            'Amendoim torrado moído em textura crocante',                      5.00,  'gourmet', '/images/prod-pacoca.jpg',         true, false, 3),
+('Maracujá',          'Acidez tropical equilibrando o doce do chocolate',                5.00,  'gourmet', '/images/prod-maracuja.jpg',       true, false, 4),
+('Romeu e Julieta',   'Goiabada e queijo, combinação clássica brasileira',               5.50,  'gourmet', '/images/prod-romeu-julieta.jpg',  true, false, 5),
 ('Leite Ninho',       'Cremoso, coberto com leite em pó',                                5.00,  'gourmet',      '/images/prod-leite-ninho.jpg',    true, true,  6),
 ('Churros',           'Canela e doce de leite, irresistível',                            5.50,  'gourmet',      '/images/prod-churros.jpg',        true, false, 7),
 ('Ferrero',           'Chocolate intenso com avelã, inspirado no clássico',              6.00,  'gourmet',      '/images/prod-ferrero.jpg',        true, false, 8),
