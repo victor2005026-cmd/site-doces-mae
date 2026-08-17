@@ -7,6 +7,8 @@ import MobileMenu from './MobileMenu';
 import ChangePasswordModal from './ChangePasswordModal';
 import AccountMenu from './AccountMenu';
 import PromocoesModal from './PromocoesModal';
+import { WhatsAppIcon, InstagramIcon } from './SocialIcons';
+import { waLink } from '../lib/whatsapp';
 
 const CartIcon = (props) => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
@@ -80,6 +82,25 @@ export default function Header() {
           </nav>
 
           <div className="flex items-center gap-2 md:gap-3">
+            <a
+              href="https://www.instagram.com/docesale013"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Instagram @docesale013"
+              className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-bg-alt text-text-primary transition-colors hover:bg-rose/20"
+            >
+              <InstagramIcon width="20" height="20" />
+            </a>
+            <a
+              href={waLink('Olá! Gostaria de fazer uma encomenda na Doces da Ale')}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Falar no WhatsApp"
+              className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-bg-alt text-success transition-colors hover:bg-success/20"
+            >
+              <WhatsAppIcon width="20" height="20" />
+            </a>
+
             <div className="md:hidden">
               <AccountMenu compact onOpenAuth={() => setShowAuth(true)} onOpenChangePassword={() => setShowChangePw(true)} />
             </div>

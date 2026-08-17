@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { waLink } from '../lib/whatsapp';
+import { WhatsAppIcon, InstagramIcon } from './SocialIcons';
 
 export default function Footer() {
   return (
@@ -14,17 +15,19 @@ export default function Footer() {
             href={waLink('Olá! Gostaria de fazer uma encomenda na Doces da Ale')}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[0.9rem] font-medium text-text-primary hover:text-rose"
+            className="flex items-center gap-1.5 text-[0.9rem] font-medium text-text-primary hover:text-rose"
           >
+            <WhatsAppIcon width="18" height="18" />
             WhatsApp
           </a>
           <a
-            href="https://www.instagram.com/docesdaale"
+            href="https://www.instagram.com/docesale013"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[0.9rem] font-medium text-text-primary hover:text-rose"
+            className="flex items-center gap-1.5 text-[0.9rem] font-medium text-text-primary hover:text-rose"
           >
-            Instagram @docesdaale
+            <InstagramIcon width="18" height="18" />
+            Instagram @docesale013
           </a>
         </div>
 
