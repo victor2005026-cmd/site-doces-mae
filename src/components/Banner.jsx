@@ -6,6 +6,7 @@ import { formatPrice } from '../data/products';
 export default function Banner() {
   const [showInfo, setShowInfo] = useState(false);
   const { config } = useAdminProducts();
+  const configLoaded = config !== null;
   const horario = config?.horario_funcionamento;
   const status = getStoreStatus(horario);
   const wideSrc = config?.banner_url || '/images/banner-wide.jpg';
@@ -15,20 +16,28 @@ export default function Banner() {
   return (
     <section className="container-site pt-6">
       <div className="relative aspect-[16/9] overflow-hidden rounded-card bg-bg-alt sm:aspect-[21/6]">
-        <img
-          src={wideSrc}
-          alt="Brigadeiros artesanais Doces da Ale"
-          className={`h-full w-full ${ajusteContain ? 'object-contain' : 'object-cover'}`}
-        />
+        {configLoaded ? (
+          <img
+            src={wideSrc}
+            alt="Brigadeiros artesanais Doces da Ale"
+            className={`h-full w-full ${ajusteContain ? 'object-contain' : 'object-cover'}`}
+          />
+        ) : (
+          <div className="h-full w-full animate-pulse bg-bg-alt" />
+        )}
         {!ajusteContain && <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />}
       </div>
 
       <div className="relative z-[1] -mt-10 flex flex-col gap-3 sm:-mt-12 sm:flex-row sm:items-end">
-        <img
-          src={logoSrc}
-          alt="Doces da Ale"
-          className="h-20 w-20 flex-shrink-0 rounded-2xl border-4 border-bg-main object-cover shadow-md sm:h-24 sm:w-24"
-        />
+        {configLoaded ? (
+          <img
+            src={logoSrc}
+            alt="Doces da Ale"
+            className="h-20 w-20 flex-shrink-0 rounded-2xl border-4 border-bg-main object-cover shadow-md sm:h-24 sm:w-24"
+          />
+        ) : (
+          <div className="h-20 w-20 flex-shrink-0 animate-pulse rounded-2xl border-4 border-bg-main bg-bg-alt shadow-md sm:h-24 sm:w-24" />
+        )}
         <div className="rounded-card bg-bg-main px-4 py-3 shadow-sm">
           <h1 className="font-heading text-[1.3rem] font-semibold text-text-primary sm:text-[1.5rem]">
             Doces da Ale
