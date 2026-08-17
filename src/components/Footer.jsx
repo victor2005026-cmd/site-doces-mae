@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
 import { waLink } from '../lib/whatsapp';
 import { WhatsAppIcon, InstagramIcon } from './SocialIcons';
+import SocialFloatingButtons from './SocialFloatingButtons';
 
 export default function Footer() {
   return (
     <footer className="border-t border-border-light bg-bg-alt py-10">
+      <SocialFloatingButtons />
       <div className="container-site flex flex-col items-center gap-4 text-center">
         <span className="font-script text-[1.8rem] text-gold">Doces da Ale</span>
 
