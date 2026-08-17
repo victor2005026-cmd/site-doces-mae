@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { formatPrice } from '../data/products';
 import { waLink } from '../lib/whatsapp';
+import AuthModal from '../components/AuthModal';
 
 const STATUS_LABELS = {
   aguardando_confirmacao_pagamento: { label: 'Aguardando confirmação', color: 'text-gold' },
@@ -30,6 +31,7 @@ export default function OrderConfirmationPage() {
   const [pedido, setPedido] = useState(null);
   const [itens, setItens] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [mostrarCadastro, setMostrarCadastro] = useState(false);
 
   useEffect(() => {
     const fetchPedido = async () => {
@@ -186,7 +188,7 @@ export default function OrderConfirmationPage() {
             </p>
             <button
               type="button"
-              onClick={() => { /* TODO: open AuthModal with register tab */ }}
+              onClick={() => setMostrarCadastro(true)}
               className="inline-block rounded-full bg-gold px-5 py-2 text-[0.9rem] font-semibold text-white hover:bg-gold-dark"
             >
               Criar minha conta
@@ -194,6 +196,8 @@ export default function OrderConfirmationPage() {
           </div>
         )}
       </div>
+
+      <AuthModal isOpen={mostrarCadastro} initialTab="cadastro" onClose={() => setMostrarCadastro(false)} />
     </div>
   );
 }
