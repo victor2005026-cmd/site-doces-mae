@@ -288,6 +288,41 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.buscar_recuperacao_senha(text) TO anon, authenticated;
 
+-- Consulta pública usada nas telas de acompanhamento de pedido de CONVIDADO
+-- (/pedido/:numero e /pagamento/:numero). Sem essa função, um convidado
+-- precisaria de uma policy de SELECT em "usuario_id IS NULL" — o que também
+-- deixaria QUALQUER pessoa listar todos os pedidos de convidados já feitos
+-- (nome, telefone, endereço). Aqui a busca é sempre por numero_pedido exato,
+-- então só devolve dados de quem já sabe o número do próprio pedido.
+CREATE OR REPLACE FUNCTION public.obter_pedido_convidado(p_numero_pedido text)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_pedido public.pedidos%ROWTYPE;
+  v_itens jsonb;
+BEGIN
+  SELECT * INTO v_pedido FROM public.pedidos
+  WHERE numero_pedido = p_numero_pedido AND usuario_id IS NULL;
+
+  IF NOT FOUND THEN
+    RETURN NULL;
+  END IF;
+
+  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+    'id', ip.id, 'produto_id', ip.produto_id, 'nome_produto', ip.nome_produto,
+    'quantidade', ip.quantidade, 'preco_unitario', ip.preco_unitario
+  )), '[]'::jsonb) INTO v_itens
+  FROM public.itens_pedido ip WHERE ip.pedido_id = v_pedido.id;
+
+  RETURN jsonb_build_object('pedido', to_jsonb(v_pedido), 'itens', v_itens);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.obter_pedido_convidado(text) TO anon, authenticated;
+
 -- ============================================================
 -- ROW LEVEL SECURITY
 -- ============================================================
@@ -317,11 +352,14 @@ CREATE POLICY "perfis_select_own"    ON public.perfis FOR SELECT USING (auth.uid
 CREATE POLICY "perfis_insert_own"    ON public.perfis FOR INSERT WITH CHECK (auth.uid() = id);
 CREATE POLICY "perfis_update_own"    ON public.perfis FOR UPDATE USING (auth.uid() = id OR public.eh_admin());
 
--- pedidos: usuário logado vê os seus; convidado vê os que ele mesmo criou
---          (usuario_id IS NULL — não há como amarrar a uma sessão anônima
---          específica, então o numero_pedido funciona como "chave" de acesso);
---          admin vê e atualiza todos
-CREATE POLICY "pedidos_select_own"   ON public.pedidos FOR SELECT USING (auth.uid() = usuario_id OR usuario_id IS NULL OR public.eh_admin());
+-- pedidos: usuário logado vê só os seus; admin vê e atualiza todos.
+--          Convidado (usuario_id IS NULL) NÃO tem policy de SELECT direta —
+--          "usuario_id IS NULL" deixaria QUALQUER pessoa listar TODOS os
+--          pedidos de convidados (nome, telefone, endereço de todo mundo).
+--          Convidado acessa o próprio pedido só pela função
+--          obter_pedido_convidado(numero_pedido), que exige saber o número
+--          exato em vez de permitir listar tudo.
+CREATE POLICY "pedidos_select_own"   ON public.pedidos FOR SELECT USING (auth.uid() = usuario_id OR public.eh_admin());
 CREATE POLICY "pedidos_insert_own"   ON public.pedidos FOR INSERT WITH CHECK (auth.uid() = usuario_id OR usuario_id IS NULL);
 CREATE POLICY "pedidos_update_admin" ON public.pedidos FOR UPDATE USING (public.eh_admin());
 
@@ -332,9 +370,9 @@ CREATE POLICY "pedidos_update_pagamento_cliente" ON public.pedidos
   USING (status = 'aguardando_pagamento' AND (auth.uid() = usuario_id OR usuario_id IS NULL))
   WITH CHECK (status IN ('aguardando_confirmacao_pagamento', 'cancelado'));
 
--- itens_pedido: segue o pedido pai
+-- itens_pedido: segue o pedido pai (convidado acessa via obter_pedido_convidado, não direto)
 CREATE POLICY "itens_select" ON public.itens_pedido FOR SELECT USING (
-  EXISTS (SELECT 1 FROM public.pedidos p WHERE p.id = pedido_id AND (p.usuario_id = auth.uid() OR p.usuario_id IS NULL OR public.eh_admin()))
+  EXISTS (SELECT 1 FROM public.pedidos p WHERE p.id = pedido_id AND (p.usuario_id = auth.uid() OR public.eh_admin()))
 );
 CREATE POLICY "itens_insert" ON public.itens_pedido FOR INSERT WITH CHECK (
   EXISTS (SELECT 1 FROM public.pedidos p WHERE p.id = pedido_id AND (p.usuario_id = auth.uid() OR p.usuario_id IS NULL))
@@ -549,3 +587,43 @@ ON CONFLICT (codigo) DO NOTHING;
 -- ALTER TABLE public.configuracoes ADD COLUMN IF NOT EXISTS notif_whatsapp_ativo boolean NOT NULL DEFAULT false;
 -- ALTER TABLE public.configuracoes ADD COLUMN IF NOT EXISTS notif_whatsapp_numero text;
 -- ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS notificacao_whatsapp_enviada_em timestamptz;
+
+-- ============================================================
+-- MIGRAÇÃO (projetos já existentes): fecha o vazamento de dados
+-- de convidado — a policy antiga "usuario_id IS NULL" deixava
+-- QUALQUER pessoa listar nome/telefone/endereço de todos os
+-- pedidos de convidados via REST direto (sem precisar de login
+-- nem saber nenhum número de pedido). Roda isto no SQL Editor:
+-- ============================================================
+-- CREATE OR REPLACE FUNCTION public.obter_pedido_convidado(p_numero_pedido text)
+-- RETURNS jsonb
+-- LANGUAGE plpgsql
+-- SECURITY DEFINER
+-- SET search_path = public
+-- AS $$
+-- DECLARE
+--   v_pedido public.pedidos%ROWTYPE;
+--   v_itens jsonb;
+-- BEGIN
+--   SELECT * INTO v_pedido FROM public.pedidos
+--   WHERE numero_pedido = p_numero_pedido AND usuario_id IS NULL;
+--   IF NOT FOUND THEN
+--     RETURN NULL;
+--   END IF;
+--   SELECT COALESCE(jsonb_agg(jsonb_build_object(
+--     'id', ip.id, 'produto_id', ip.produto_id, 'nome_produto', ip.nome_produto,
+--     'quantidade', ip.quantidade, 'preco_unitario', ip.preco_unitario
+--   )), '[]'::jsonb) INTO v_itens
+--   FROM public.itens_pedido ip WHERE ip.pedido_id = v_pedido.id;
+--   RETURN jsonb_build_object('pedido', to_jsonb(v_pedido), 'itens', v_itens);
+-- END;
+-- $$;
+-- GRANT EXECUTE ON FUNCTION public.obter_pedido_convidado(text) TO anon, authenticated;
+--
+-- DROP POLICY IF EXISTS "pedidos_select_own" ON public.pedidos;
+-- CREATE POLICY "pedidos_select_own" ON public.pedidos FOR SELECT USING (auth.uid() = usuario_id OR public.eh_admin());
+--
+-- DROP POLICY IF EXISTS "itens_select" ON public.itens_pedido;
+-- CREATE POLICY "itens_select" ON public.itens_pedido FOR SELECT USING (
+--   EXISTS (SELECT 1 FROM public.pedidos p WHERE p.id = pedido_id AND (p.usuario_id = auth.uid() OR public.eh_admin()))
+-- );

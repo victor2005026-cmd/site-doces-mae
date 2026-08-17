@@ -5,6 +5,7 @@ import { useAdminProducts } from '../context/AdminProductsContext';
 import { formatPrice } from '../data/products';
 import { waLink } from '../lib/whatsapp';
 import PixQRCode from '../components/PixQRCode';
+import { buscarPedidoComItens } from '../lib/pedidos';
 
 function formatCountdown(ms) {
   const total = Math.max(0, Math.floor(ms / 1000));
@@ -26,13 +27,16 @@ export default function AguardandoPagamentoPage() {
   const jaExpirouRef = useRef(false);
 
   useEffect(() => {
-    supabase.from('pedidos').select('*').eq('numero_pedido', numeroPedido).single().then(({ data }) => {
-      setPedido(data ?? null);
+    buscarPedidoComItens(numeroPedido).then(({ pedido: data }) => {
+      setPedido(data);
       setLoading(false);
     });
   }, [numeroPedido]);
 
-  // Tempo real: reflete quando a Ale confirma o pagamento no admin, ou quando expira/cancela
+  // Tempo real: reflete quando a Ale confirma o pagamento no admin, ou quando expira/cancela.
+  // Só funciona pra quem está logado (RLS não deixa mais um convidado assinar
+  // updates de pedidos de outros convidados) — por isso o polling abaixo cobre
+  // o caso de convidado também.
   useEffect(() => {
     if (!pedido?.id) return;
     const channel = supabase
@@ -43,6 +47,18 @@ export default function AguardandoPagamentoPage() {
       .subscribe();
     return () => supabase.removeChannel(channel);
   }, [pedido?.id]);
+
+  // Fallback pra convidado: confere a cada 5s se o status mudou (cobre o caso
+  // do realtime acima não disparar, já que a RLS restringe a assinatura).
+  useEffect(() => {
+    if (pedido?.status !== 'aguardando_pagamento' && pedido?.status !== 'aguardando_confirmacao_pagamento') return;
+    const t = setInterval(() => {
+      buscarPedidoComItens(numeroPedido).then(({ pedido: data }) => {
+        if (data) setPedido((prev) => (prev ? { ...prev, ...data } : data));
+      });
+    }, 5000);
+    return () => clearInterval(t);
+  }, [numeroPedido, pedido?.status]);
 
   // Assim que o pagamento é confirmado (ou o pedido segue o fluxo normal), manda pra tela de sucesso
   useEffect(() => {

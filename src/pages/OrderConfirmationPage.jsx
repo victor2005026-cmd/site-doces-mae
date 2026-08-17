@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { formatPrice } from '../data/products';
 import { waLink } from '../lib/whatsapp';
 import AuthModal from '../components/AuthModal';
+import { buscarPedidoComItens } from '../lib/pedidos';
 
 const STATUS_LABELS = {
   aguardando_confirmacao_pagamento: { label: 'Aguardando confirmação', color: 'text-gold' },
@@ -35,15 +35,10 @@ export default function OrderConfirmationPage() {
 
   useEffect(() => {
     const fetchPedido = async () => {
-      const { data } = await supabase
-        .from('pedidos')
-        .select('*')
-        .eq('numero_pedido', numeroPedido)
-        .single();
+      const { pedido: data, itens: is } = await buscarPedidoComItens(numeroPedido);
       if (data) {
         setPedido(data);
-        const { data: is } = await supabase.from('itens_pedido').select('*').eq('pedido_id', data.id);
-        setItens(is ?? []);
+        setItens(is);
       }
       setLoading(false);
     };
