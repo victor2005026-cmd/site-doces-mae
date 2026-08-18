@@ -82,45 +82,6 @@ function ImageEditRow({ entry }) {
   );
 }
 
-function BannerAjusteToggle() {
-  const { config, saveImagemSite } = useAdminProducts();
-  const [saving, setSaving] = useState(false);
-  const ajuste = config?.banner_ajuste || 'cover';
-
-  const handleChange = async (valor) => {
-    if (valor === ajuste || saving) return;
-    setSaving(true);
-    await saveImagemSite('banner_ajuste', valor);
-    setSaving(false);
-  };
-
-  return (
-    <div className="flex flex-col gap-3 border-t border-border-light py-4 sm:flex-row sm:items-center sm:justify-between">
-      <div>
-        <p className="text-[0.95rem] font-medium text-text-primary">Ajustar imagem do banner</p>
-        <p className="text-[0.8rem] text-text-secondary">
-          "Cortar" preenche o espaço todo; "Ajustar tudo" mostra a foto inteira, sem cortar nenhuma parte.
-        </p>
-      </div>
-      <div className="flex flex-shrink-0 gap-1 rounded-full border border-border-light p-1">
-        {[{ v: 'cover', label: 'Cortar' }, { v: 'contain', label: 'Ajustar tudo' }].map((opt) => (
-          <button
-            key={opt.v}
-            type="button"
-            disabled={saving}
-            onClick={() => handleChange(opt.v)}
-            className={`rounded-full px-3 py-1.5 text-[0.8rem] font-medium transition-colors disabled:opacity-60 ${
-              ajuste === opt.v ? 'bg-rose text-white' : 'text-text-secondary hover:text-text-primary'
-            }`}
-          >
-            {opt.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export default function AdminImagesSection() {
   return (
     <div>
@@ -130,12 +91,15 @@ export default function AdminImagesSection() {
       </p>
       <section className="rounded-card border border-border-light bg-bg-main px-5">
         <h3 className="pt-4 font-heading text-[1rem] font-semibold text-text-primary">Fotos do banner</h3>
+        <p className="pb-4 pt-1 text-[0.8rem] text-text-secondary">
+          O banner principal sempre mostra a imagem inteira, sem cortar nada — suba uma foto já na proporção que
+          quiser ver no site (recomendado: bem larga, tipo 2000×800px).
+        </p>
         <ul>
           {CAMPOS.map((entry) => (
             <ImageEditRow key={entry.campo} entry={entry} />
           ))}
         </ul>
-        <BannerAjusteToggle />
       </section>
     </div>
   );

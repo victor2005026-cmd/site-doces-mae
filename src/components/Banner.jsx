@@ -11,21 +11,19 @@ export default function Banner() {
   const status = getStoreStatus(horario);
   const wideSrc = config?.banner_url || '/images/banner-wide.jpg';
   const logoSrc = config?.logo_url || '/images/banner-brigadeiro-heart.jpg';
-  const ajusteContain = config?.banner_ajuste === 'contain';
 
   return (
     <section className="container-site pt-6">
-      <div className="relative aspect-[16/9] overflow-hidden rounded-card bg-bg-alt sm:aspect-[21/6]">
+      <div className="relative overflow-hidden rounded-card bg-bg-alt">
         {configLoaded ? (
           <img
             src={wideSrc}
             alt="Brigadeiros artesanais Doces da Ale"
-            className={`h-full w-full ${ajusteContain ? 'object-contain' : 'object-cover'}`}
+            className="h-auto w-full"
           />
         ) : (
-          <div className="h-full w-full animate-pulse bg-bg-alt" />
+          <div className="aspect-[21/6] w-full animate-pulse bg-bg-alt" />
         )}
-        {!ajusteContain && <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />}
       </div>
 
       <div className="relative z-[1] -mt-10 flex flex-col gap-3 sm:-mt-12 sm:flex-row sm:items-end">
