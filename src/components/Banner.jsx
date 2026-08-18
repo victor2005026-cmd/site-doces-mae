@@ -19,7 +19,7 @@ export default function Banner() {
           <img
             src={wideSrc}
             alt="Brigadeiros artesanais Doces da Ale"
-            className="h-auto w-full"
+            className="h-[260px] w-full object-cover object-center sm:h-[420px]"
           />
         ) : (
           <div className="aspect-[21/6] w-full animate-pulse bg-bg-alt" />
