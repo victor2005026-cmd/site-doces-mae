@@ -323,6 +323,63 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.obter_pedido_convidado(text) TO anon, authenticated;
 
+-- Cria um pedido de CONVIDADO (usuario_id sempre NULL aqui). Necessário porque
+-- o Postgres, ao fazer INSERT ... RETURNING, exige que a linha inserida
+-- também passe pela policy de SELECT — e como convidado não tem mais policy
+-- de SELECT direta na tabela (só via obter_pedido_convidado), um insert direto
+-- do navegador falha com "new row violates row-level security policy" assim
+-- que tenta devolver o pedido criado. Rodando dentro de uma função
+-- SECURITY DEFINER, o retorno não passa por essa checagem.
+CREATE OR REPLACE FUNCTION public.criar_pedido_convidado(p_pedido jsonb, p_itens jsonb)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_pedido public.pedidos%ROWTYPE;
+  v_item jsonb;
+BEGIN
+  INSERT INTO public.pedidos (
+    dados_convidado, origem, status, data_expiracao_pagamento, tipo_entrega,
+    endereco_entrega, data_agendada, periodo_agendado, forma_pagamento,
+    observacoes, subtotal, taxa_entrega, cupom_id, desconto_aplicado, total
+  ) VALUES (
+    p_pedido->'dados_convidado',
+    COALESCE(p_pedido->>'origem', 'site'),
+    COALESCE(p_pedido->>'status', 'aguardando_pagamento'),
+    (p_pedido->>'data_expiracao_pagamento')::timestamptz,
+    p_pedido->>'tipo_entrega',
+    p_pedido->'endereco_entrega',
+    (p_pedido->>'data_agendada')::date,
+    p_pedido->>'periodo_agendado',
+    p_pedido->>'forma_pagamento',
+    p_pedido->>'observacoes',
+    (p_pedido->>'subtotal')::numeric,
+    (p_pedido->>'taxa_entrega')::numeric,
+    CASE WHEN p_pedido->>'cupom_id' IS NULL THEN NULL ELSE (p_pedido->>'cupom_id')::uuid END,
+    COALESCE((p_pedido->>'desconto_aplicado')::numeric, 0),
+    (p_pedido->>'total')::numeric
+  )
+  RETURNING * INTO v_pedido;
+
+  FOR v_item IN SELECT * FROM jsonb_array_elements(COALESCE(p_itens, '[]'::jsonb))
+  LOOP
+    INSERT INTO public.itens_pedido (pedido_id, nome_produto, quantidade, preco_unitario)
+    VALUES (
+      v_pedido.id,
+      v_item->>'nome_produto',
+      (v_item->>'quantidade')::int,
+      (v_item->>'preco_unitario')::numeric
+    );
+  END LOOP;
+
+  RETURN to_jsonb(v_pedido);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.criar_pedido_convidado(jsonb, jsonb) TO anon, authenticated;
+
 -- ============================================================
 -- ROW LEVEL SECURITY
 -- ============================================================
@@ -627,3 +684,53 @@ ON CONFLICT (codigo) DO NOTHING;
 -- CREATE POLICY "itens_select" ON public.itens_pedido FOR SELECT USING (
 --   EXISTS (SELECT 1 FROM public.pedidos p WHERE p.id = pedido_id AND (p.usuario_id = auth.uid() OR public.eh_admin()))
 -- );
+
+-- ============================================================
+-- MIGRAÇÃO (projetos já existentes): a correção acima quebra o
+-- checkout de CONVIDADO — o Postgres, num INSERT ... RETURNING,
+-- exige que a linha inserida passe pela policy de SELECT também,
+-- e convidado não tem mais policy de SELECT direta. Sem isto, o
+-- checkout de convidado (a maioria dos clientes) trava com
+-- "new row violates row-level security policy" ao confirmar.
+-- ============================================================
+-- CREATE OR REPLACE FUNCTION public.criar_pedido_convidado(p_pedido jsonb, p_itens jsonb)
+-- RETURNS jsonb
+-- LANGUAGE plpgsql
+-- SECURITY DEFINER
+-- SET search_path = public
+-- AS $$
+-- DECLARE
+--   v_pedido public.pedidos%ROWTYPE;
+--   v_item jsonb;
+-- BEGIN
+--   INSERT INTO public.pedidos (
+--     dados_convidado, origem, status, data_expiracao_pagamento, tipo_entrega,
+--     endereco_entrega, data_agendada, periodo_agendado, forma_pagamento,
+--     observacoes, subtotal, taxa_entrega, cupom_id, desconto_aplicado, total
+--   ) VALUES (
+--     p_pedido->'dados_convidado',
+--     COALESCE(p_pedido->>'origem', 'site'),
+--     COALESCE(p_pedido->>'status', 'aguardando_pagamento'),
+--     (p_pedido->>'data_expiracao_pagamento')::timestamptz,
+--     p_pedido->>'tipo_entrega',
+--     p_pedido->'endereco_entrega',
+--     (p_pedido->>'data_agendada')::date,
+--     p_pedido->>'periodo_agendado',
+--     p_pedido->>'forma_pagamento',
+--     p_pedido->>'observacoes',
+--     (p_pedido->>'subtotal')::numeric,
+--     (p_pedido->>'taxa_entrega')::numeric,
+--     CASE WHEN p_pedido->>'cupom_id' IS NULL THEN NULL ELSE (p_pedido->>'cupom_id')::uuid END,
+--     COALESCE((p_pedido->>'desconto_aplicado')::numeric, 0),
+--     (p_pedido->>'total')::numeric
+--   )
+--   RETURNING * INTO v_pedido;
+--   FOR v_item IN SELECT * FROM jsonb_array_elements(COALESCE(p_itens, '[]'::jsonb))
+--   LOOP
+--     INSERT INTO public.itens_pedido (pedido_id, nome_produto, quantidade, preco_unitario)
+--     VALUES (v_pedido.id, v_item->>'nome_produto', (v_item->>'quantidade')::int, (v_item->>'preco_unitario')::numeric);
+--   END LOOP;
+--   RETURN to_jsonb(v_pedido);
+-- END;
+-- $$;
+-- GRANT EXECUTE ON FUNCTION public.criar_pedido_convidado(jsonb, jsonb) TO anon, authenticated;

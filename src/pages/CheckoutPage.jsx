@@ -859,22 +859,37 @@ export default function CheckoutPage() {
         total: subtotal - descontoFinal + taxaEntrega,
       };
 
-      const { data: pedido, error } = await supabase
-        .from('pedidos')
-        .insert(pedidoPayload)
-        .select()
-        .single();
+      let pedido;
+      let itensPayload;
 
-      if (error) throw error;
+      if (user) {
+        const { data, error } = await supabase.from('pedidos').insert(pedidoPayload).select().single();
+        if (error) throw error;
+        pedido = data;
 
-      const itensPayload = items.map((item) => ({
-        pedido_id: pedido.id,
-        nome_produto: item.name,
-        quantidade: item.quantity,
-        preco_unitario: item.price,
-      }));
-
-      await supabase.from('itens_pedido').insert(itensPayload);
+        itensPayload = items.map((item) => ({
+          pedido_id: pedido.id,
+          nome_produto: item.name,
+          quantidade: item.quantity,
+          preco_unitario: item.price,
+        }));
+        await supabase.from('itens_pedido').insert(itensPayload);
+      } else {
+        // Convidado não tem policy de SELECT direta em "pedidos" (ver schema.sql),
+        // então o insert precisa passar por uma função SECURITY DEFINER — do
+        // contrário o Postgres falha ao tentar devolver a linha criada.
+        itensPayload = items.map((item) => ({
+          nome_produto: item.name,
+          quantidade: item.quantity,
+          preco_unitario: item.price,
+        }));
+        const { data, error } = await supabase.rpc('criar_pedido_convidado', {
+          p_pedido: pedidoPayload,
+          p_itens: itensPayload,
+        });
+        if (error) throw error;
+        pedido = data;
+      }
 
       if (cupomFinal?.cupomId) {
         supabase.rpc('consumir_cupom', { p_cupom_id: cupomFinal.cupomId }).then(({ error: consumoError }) => {
