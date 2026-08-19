@@ -63,13 +63,9 @@ const STATUS_PERIODOS = [
   { id: 'noite', label: 'Noite', sub: '18h – 21h' },
 ];
 
-const FORMA_PAGAMENTO_LABELS = {
-  pix: 'Via Pix',
-};
-
 // ── Stepper ──────────────────────────────────────────────────
 
-const STEPS = ['Identificação', 'Entrega', 'Agendamento', 'Pagamento', 'Revisão'];
+const STEPS = ['Entrega', 'Agendamento', 'Revisão'];
 
 function Stepper({ current }) {
   return (
@@ -622,7 +618,7 @@ function StepPagamento({ config, total, onNext, onBack, setPagamento, pagamento 
   const handleNext = () => {
     if (!pixOk) return;
     setPagamento({ forma: 'pix', obs });
-    onNext();
+    onNext(obs);
   };
 
   const ic = 'w-full rounded-card border border-border-light bg-bg-alt px-4 py-2.5 text-[0.95rem] outline-none focus:border-rose focus:ring-1 focus:ring-rose';
@@ -679,11 +675,10 @@ function StepPagamento({ config, total, onNext, onBack, setPagamento, pagamento 
 
 // ── Etapa 5 — Revisão ────────────────────────────────────────
 
-function StepRevisao({ items, subtotal, config, entrega, agendamento, pagamento, guest, coupon, onBack, onConfirm, loading }) {
+function ResumoPedido({ items, subtotal, config, entrega, agendamento, coupon }) {
   const taxa = calcularTaxaEntrega(entrega, config);
   const desconto = coupon?.desconto ?? 0;
   const total = subtotal - desconto + taxa;
-  const pixOk = Boolean(config?.pix_chave && config?.pix_nome);
 
   const dataLabel = agendamento?.data
     ? new Date(agendamento.data + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })
@@ -695,9 +690,7 @@ function StepRevisao({ items, subtotal, config, entrega, agendamento, pagamento,
     : 'Retirar no local';
 
   return (
-    <div className="mx-auto max-w-lg">
-      <h2 className="mb-6 font-heading text-[1.3rem] font-semibold text-text-primary">Revisão do pedido</h2>
-
+    <>
       <div className="mb-5 rounded-card border border-border-light bg-bg-main p-5">
         <h3 className="mb-3 font-heading text-[1rem] font-semibold text-text-primary">Itens</h3>
         <ul className="flex flex-col gap-2">
@@ -738,43 +731,88 @@ function StepRevisao({ items, subtotal, config, entrega, agendamento, pagamento,
           <span className="w-24 flex-shrink-0 text-text-secondary">Data</span>
           <span className="capitalize text-text-primary">{dataLabel} · {periodoLabel}</span>
         </div>
-        <div className="flex gap-2">
-          <span className="w-24 flex-shrink-0 text-text-secondary">Pagamento</span>
-          <span className="text-text-primary">{FORMA_PAGAMENTO_LABELS[pagamento?.forma]}</span>
-        </div>
-        {pagamento?.obs && (
-          <div className="flex gap-2">
-            <span className="w-24 flex-shrink-0 text-text-secondary">Obs.</span>
-            <span className="text-text-primary">{pagamento.obs}</span>
-          </div>
-        )}
-        {guest && (
-          <div className="flex gap-2">
-            <span className="w-24 flex-shrink-0 text-text-secondary">Cliente</span>
-            <span className="text-text-primary">{guest.nome}</span>
-          </div>
-        )}
+      </div>
+    </>
+  );
+}
+
+function StepRevisao({
+  items, subtotal, config, entrega, agendamento, coupon, user,
+  guest, setGuest, pagamento, setPagamento,
+  onBack, onConfirmPix, onConfirmWhatsApp, loading,
+}) {
+  const [metodo, setMetodo] = useState(null); // null | 'pix' | 'whatsapp'
+  const pixOk = Boolean(config?.pix_chave && config?.pix_nome);
+  const precisaIdentificar = metodo === 'pix' && !user && !guest;
+
+  if (precisaIdentificar) {
+    return (
+      <div>
+        <StepIdentificacao onNext={() => {}} setGuest={setGuest} />
+        <button
+          type="button"
+          onClick={() => setMetodo(null)}
+          className="mx-auto mt-5 block text-[0.85rem] text-text-secondary underline hover:text-rose"
+        >
+          ← Voltar
+        </button>
+      </div>
+    );
+  }
+
+  if (metodo === 'pix') {
+    return (
+      <StepPagamento
+        config={config}
+        total={subtotal - (coupon?.desconto ?? 0) + calcularTaxaEntrega(entrega, config)}
+        onNext={onConfirmPix}
+        onBack={() => setMetodo(null)}
+        setPagamento={setPagamento}
+        pagamento={pagamento}
+      />
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-lg">
+      <h2 className="mb-6 font-heading text-[1.3rem] font-semibold text-text-primary">Revisão do pedido</h2>
+
+      <ResumoPedido items={items} subtotal={subtotal} config={config} entrega={entrega} agendamento={agendamento} coupon={coupon} />
+
+      <p className="mb-3 text-[0.9rem] font-medium text-text-primary">Como você prefere finalizar?</p>
+      <div className="flex flex-col gap-3">
+        <button
+          type="button"
+          onClick={() => setMetodo('pix')}
+          disabled={loading || !pixOk}
+          className="rounded-card border-2 border-rose p-4 text-left transition-colors hover:bg-rose/5 disabled:opacity-60"
+        >
+          <p className="font-semibold text-text-primary">Pagar por Pix pelo site</p>
+          <p className="text-[0.85rem] text-text-secondary">Gera o QR Code na hora, acompanha tudo por aqui</p>
+        </button>
+        <button
+          type="button"
+          onClick={onConfirmWhatsApp}
+          disabled={loading}
+          className="flex items-center justify-between rounded-card border-2 border-success p-4 text-left transition-colors hover:bg-success/5 disabled:opacity-60"
+        >
+          <span>
+            <p className="font-semibold text-text-primary">Enviar pedido pelo WhatsApp</p>
+            <p className="text-[0.85rem] text-text-secondary">Combina o pagamento direto com a Ale, sem precisar se identificar aqui</p>
+          </span>
+          {loading && <Spinner />}
+        </button>
       </div>
 
       {!pixOk && (
-        <p className="mb-3 text-center text-[0.85rem] text-rose-dark">
-          Configuração de Pix pendente — não é possível confirmar o pedido agora. Fale no WhatsApp.
+        <p className="mt-3 text-center text-[0.82rem] text-rose-dark">
+          Pix ainda não configurado — use "Enviar pelo WhatsApp" por enquanto.
         </p>
       )}
 
-      <div className="flex gap-3">
-        <button
-          onClick={onConfirm}
-          disabled={loading || !pixOk}
-          className="flex flex-1 items-center justify-center gap-2 rounded-full bg-gold py-3 text-[1rem] font-bold text-white transition-colors hover:bg-gold-dark disabled:opacity-60"
-        >
-          {loading && <Spinner />}
-          {loading ? 'Enviando pedido…' : 'Confirmar pedido'}
-        </button>
-        <button onClick={onBack} className="rounded-full border border-border-light px-5 py-2.5 text-[0.9rem] text-text-secondary hover:border-rose hover:text-rose">
-          Voltar
-        </button>
-      </div>
+      <button onClick={onBack} className="mt-5 w-full rounded-full border border-border-light px-5 py-2.5 text-[0.9rem] text-text-secondary hover:border-rose hover:text-rose">
+        Voltar
+      </button>
     </div>
   );
 }
@@ -807,103 +845,128 @@ export default function CheckoutPage() {
     });
   }, []); // eslint-disable-line
 
-  // Pula etapa 1 se já logado
-  useEffect(() => {
-    if (user && step === 0) setStep(1);
-  }, [user, step]);
-
   const taxaEntrega = calcularTaxaEntrega(entrega, config);
-  const desconto = coupon?.desconto ?? 0;
-  const total = subtotal - desconto + taxaEntrega;
 
-  const handleConfirm = async () => {
+  // Cria o pedido (+ itens, cupom, notificações) e devolve a linha criada.
+  // camposExtras decide o que muda entre o fluxo Pix e o fluxo WhatsApp
+  // (status, origem, expiração, observações).
+  const criarPedido = async (camposExtras) => {
+    const telefoneCliente = user ? perfil?.telefone : guest?.telefone;
+
+    // revalida o cupom com o telefone real (só conhecido a partir daqui) antes de cobrar
+    let cupomFinal = coupon;
+    if (coupon) {
+      const { data, error: rpcError } = await supabase.rpc('aplicar_cupom', {
+        p_codigo: coupon.codigo,
+        p_telefone: telefoneCliente || '',
+        p_valor_pedido: subtotal,
+      });
+      const resultado = !rpcError && Array.isArray(data) ? data[0] : null;
+      if (rpcError || !resultado || resultado.erro) {
+        alert(`O cupom ${coupon.codigo} não é mais válido (${resultado?.erro || 'erro ao validar'}). Remova-o e tente novamente.`);
+        return null;
+      }
+      cupomFinal = { cupomId: resultado.cupom_id, codigo: resultado.codigo, desconto: Number(resultado.desconto) };
+    }
+
+    const descontoFinal = cupomFinal?.desconto ?? 0;
+
+    const pedidoPayload = {
+      usuario_id: user?.id ?? null,
+      dados_convidado: !user && guest ? guest : null,
+      origem: 'site',
+      tipo_entrega: entrega.tipo,
+      endereco_entrega: entrega.tipo === 'entrega' ? entrega.endereco : null,
+      data_agendada: agendamento.data,
+      periodo_agendado: agendamento.periodo,
+      forma_pagamento: 'pix',
+      subtotal,
+      taxa_entrega: taxaEntrega,
+      cupom_id: cupomFinal?.cupomId ?? null,
+      desconto_aplicado: descontoFinal,
+      total: subtotal - descontoFinal + taxaEntrega,
+      ...camposExtras,
+    };
+
+    let pedido;
+    let itensPayload;
+
+    if (user) {
+      const { data, error } = await supabase.from('pedidos').insert(pedidoPayload).select().single();
+      if (error) throw error;
+      pedido = data;
+
+      itensPayload = items.map((item) => ({
+        pedido_id: pedido.id,
+        nome_produto: item.name,
+        quantidade: item.quantity,
+        preco_unitario: item.price,
+      }));
+      await supabase.from('itens_pedido').insert(itensPayload);
+    } else {
+      // Convidado não tem policy de SELECT direta em "pedidos" (ver schema.sql),
+      // então o insert precisa passar por uma função SECURITY DEFINER — do
+      // contrário o Postgres falha ao tentar devolver a linha criada.
+      itensPayload = items.map((item) => ({
+        nome_produto: item.name,
+        quantidade: item.quantity,
+        preco_unitario: item.price,
+      }));
+      const { data, error } = await supabase.rpc('criar_pedido_convidado', {
+        p_pedido: pedidoPayload,
+        p_itens: itensPayload,
+      });
+      if (error) throw error;
+      pedido = data;
+    }
+
+    if (cupomFinal?.cupomId) {
+      supabase.rpc('consumir_cupom', { p_cupom_id: cupomFinal.cupomId }).then(({ error: consumoError }) => {
+        if (consumoError) console.error('Erro ao registrar uso do cupom:', consumoError);
+      });
+    }
+
+    // Não bloqueia nem falha o checkout se o e-mail não sair.
+    notificarPedidoNovoPorEmail(config, pedido, itensPayload).catch(() => {});
+    // Também não bloqueia o checkout se o aviso no WhatsApp falhar.
+    notificarPedidoNovoPorWhatsApp(pedido.id).catch(() => {});
+
+    if (clearCart) clearCart();
+    return pedido;
+  };
+
+  const handleConfirmPix = async (obs) => {
     setSaving(true);
     try {
-      const telefoneCliente = user ? perfil?.telefone : guest?.telefone;
-
-      // revalida o cupom com o telefone real (só conhecido a partir daqui) antes de cobrar
-      let cupomFinal = coupon;
-      if (coupon) {
-        const { data, error: rpcError } = await supabase.rpc('aplicar_cupom', {
-          p_codigo: coupon.codigo,
-          p_telefone: telefoneCliente || '',
-          p_valor_pedido: subtotal,
-        });
-        const resultado = !rpcError && Array.isArray(data) ? data[0] : null;
-        if (rpcError || !resultado || resultado.erro) {
-          alert(`O cupom ${coupon.codigo} não é mais válido (${resultado?.erro || 'erro ao validar'}). Remova-o e tente novamente.`);
-          setSaving(false);
-          return;
-        }
-        cupomFinal = { cupomId: resultado.cupom_id, codigo: resultado.codigo, desconto: Number(resultado.desconto) };
-      }
-
-      const descontoFinal = cupomFinal?.desconto ?? 0;
-
-      const pedidoPayload = {
-        usuario_id: user?.id ?? null,
-        dados_convidado: !user && guest ? guest : null,
-        origem: 'site',
+      const pedido = await criarPedido({
         status: 'aguardando_pagamento',
         data_expiracao_pagamento: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
-        tipo_entrega: entrega.tipo,
-        endereco_entrega: entrega.tipo === 'entrega' ? entrega.endereco : null,
-        data_agendada: agendamento.data,
-        periodo_agendado: agendamento.periodo,
-        forma_pagamento: 'pix',
-        observacoes: pagamento.obs || null,
-        subtotal,
-        taxa_entrega: taxaEntrega,
-        cupom_id: cupomFinal?.cupomId ?? null,
-        desconto_aplicado: descontoFinal,
-        total: subtotal - descontoFinal + taxaEntrega,
-      };
+        observacoes: obs || null,
+      });
+      if (pedido) navigate(`/pagamento/${pedido.numero_pedido}`);
+    } catch (err) {
+      alert('Erro ao confirmar pedido. Tente novamente.');
+      console.error(err);
+    } finally {
+      setSaving(false);
+    }
+  };
 
-      let pedido;
-      let itensPayload;
-
-      if (user) {
-        const { data, error } = await supabase.from('pedidos').insert(pedidoPayload).select().single();
-        if (error) throw error;
-        pedido = data;
-
-        itensPayload = items.map((item) => ({
-          pedido_id: pedido.id,
-          nome_produto: item.name,
-          quantidade: item.quantity,
-          preco_unitario: item.price,
-        }));
-        await supabase.from('itens_pedido').insert(itensPayload);
-      } else {
-        // Convidado não tem policy de SELECT direta em "pedidos" (ver schema.sql),
-        // então o insert precisa passar por uma função SECURITY DEFINER — do
-        // contrário o Postgres falha ao tentar devolver a linha criada.
-        itensPayload = items.map((item) => ({
-          nome_produto: item.name,
-          quantidade: item.quantity,
-          preco_unitario: item.price,
-        }));
-        const { data, error } = await supabase.rpc('criar_pedido_convidado', {
-          p_pedido: pedidoPayload,
-          p_itens: itensPayload,
-        });
-        if (error) throw error;
-        pedido = data;
+  const handleConfirmWhatsApp = async () => {
+    setSaving(true);
+    try {
+      const pedido = await criarPedido({ status: 'recebido', origem: 'whatsapp', observacoes: null });
+      if (pedido) {
+        const itensTexto = items.map((i) => `• ${i.quantity}× ${i.name}`).join('\n');
+        const enderecoTexto = entrega.tipo === 'entrega'
+          ? `Entrega: ${entrega.endereco.rua}, ${entrega.endereco.numero} – ${entrega.endereco.bairro}, ${entrega.endereco.cidade}`
+          : 'Retirada no local';
+        const dataTexto = new Date(agendamento.data + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        const periodoTexto = STATUS_PERIODOS.find((p) => p.id === agendamento.periodo)?.label ?? '';
+        const mensagem = `Olá! Quero confirmar meu pedido ${pedido.numero_pedido} 🍫\n\n${itensTexto}\n\nTotal: ${formatPrice(pedido.total)}\n${enderecoTexto}\nData: ${dataTexto} (${periodoTexto})`;
+        window.open(waLink(mensagem), '_blank');
+        navigate(`/pedido/${pedido.numero_pedido}`);
       }
-
-      if (cupomFinal?.cupomId) {
-        supabase.rpc('consumir_cupom', { p_cupom_id: cupomFinal.cupomId }).then(({ error: consumoError }) => {
-          if (consumoError) console.error('Erro ao registrar uso do cupom:', consumoError);
-        });
-      }
-
-      // Não bloqueia nem falha o checkout se o e-mail não sair.
-      notificarPedidoNovoPorEmail(config, pedido, itensPayload).catch(() => {});
-      // Também não bloqueia o checkout se o aviso no WhatsApp falhar.
-      notificarPedidoNovoPorWhatsApp(pedido.id).catch(() => {});
-
-      if (clearCart) clearCart();
-      navigate(`/pagamento/${pedido.numero_pedido}`);
     } catch (err) {
       alert('Erro ao confirmar pedido. Tente novamente.');
       console.error(err);
@@ -938,40 +1001,33 @@ export default function CheckoutPage() {
         </div>
         <Stepper current={step} />
         <div className="mt-6 rounded-card border border-border-light bg-bg-main p-6">
-          {step === 0 && <StepIdentificacao onNext={() => setStep(1)} setGuest={setGuest} />}
-          {step === 1 && (
+          {step === 0 && (
             <StepEntrega
               config={config}
               taxasEntrega={taxasEntrega}
-              onNext={() => setStep(2)}
-              onBack={() => setStep(0)}
+              onNext={() => setStep(1)}
+              onBack={() => navigate('/')}
               setEntrega={setEntrega}
               entrega={entrega}
             />
           )}
-          {step === 2 && <StepAgendamento config={config} onNext={() => setStep(3)} onBack={() => setStep(1)} setAgendamento={setAgendamento} agendamento={agendamento} datasBloqueadas={datasBlq} />}
-          {step === 3 && (
-            <StepPagamento
-              config={config}
-              total={total}
-              onNext={() => setStep(4)}
-              onBack={() => setStep(2)}
-              setPagamento={setPagamento}
-              pagamento={pagamento}
-            />
-          )}
-          {step === 4 && (
+          {step === 1 && <StepAgendamento config={config} onNext={() => setStep(2)} onBack={() => setStep(0)} setAgendamento={setAgendamento} agendamento={agendamento} datasBloqueadas={datasBlq} />}
+          {step === 2 && (
             <StepRevisao
               items={items}
               subtotal={subtotal}
               config={config}
               entrega={entrega}
               agendamento={agendamento}
-              pagamento={pagamento}
-              guest={guest}
               coupon={coupon}
-              onBack={() => setStep(3)}
-              onConfirm={handleConfirm}
+              user={user}
+              guest={guest}
+              setGuest={setGuest}
+              pagamento={pagamento}
+              setPagamento={setPagamento}
+              onBack={() => setStep(1)}
+              onConfirmPix={handleConfirmPix}
+              onConfirmWhatsApp={handleConfirmWhatsApp}
               loading={saving}
             />
           )}
