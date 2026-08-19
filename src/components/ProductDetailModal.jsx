@@ -24,9 +24,9 @@ export default function ProductDetailModal({ product, onClose }) {
       className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="flex w-full max-w-[420px] flex-col overflow-hidden rounded-card bg-bg-main shadow-lg">
-        <div className="relative aspect-square w-full bg-bg-alt">
-          <img src={product.image} alt={product.alt} className="h-full w-full object-cover" />
+      <div className="flex max-h-[90vh] w-full max-w-[420px] flex-col overflow-y-auto overscroll-contain rounded-card bg-bg-main shadow-lg">
+        <div className="relative h-64 w-full flex-shrink-0 overflow-hidden bg-bg-alt sm:h-72">
+          <img src={product.image} alt={product.alt} className="absolute inset-0 h-full w-full object-cover" />
           {product.badge && (
             <span className="absolute left-3 top-3 rounded-full bg-rose px-3 py-1 text-[0.7rem] font-semibold text-white shadow-sm">
               {product.badge}
