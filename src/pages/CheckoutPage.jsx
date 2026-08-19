@@ -780,28 +780,27 @@ function StepRevisao({
       <ResumoPedido items={items} subtotal={subtotal} config={config} entrega={entrega} agendamento={agendamento} coupon={coupon} />
 
       <p className="mb-3 text-[0.9rem] font-medium text-text-primary">Como você prefere finalizar?</p>
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-1.5">
         <button
           type="button"
           onClick={() => setMetodo('pix')}
           disabled={loading || !pixOk}
-          className="rounded-card border-2 border-rose p-4 text-left transition-colors hover:bg-rose/5 disabled:opacity-60"
+          className="rounded-full bg-rose py-3 text-[0.95rem] font-semibold text-white transition-colors hover:bg-rose-dark disabled:opacity-60"
         >
-          <p className="font-semibold text-text-primary">Pagar por Pix pelo site</p>
-          <p className="text-[0.85rem] text-text-secondary">Gera o QR Code na hora, acompanha tudo por aqui</p>
+          Pagar por Pix pelo site
         </button>
+        <p className="mb-2 text-center text-[0.8rem] text-text-secondary">Gera o QR Code na hora, acompanha tudo por aqui</p>
+
         <button
           type="button"
           onClick={onConfirmWhatsApp}
           disabled={loading}
-          className="flex items-center justify-between rounded-card border-2 border-success p-4 text-left transition-colors hover:bg-success/5 disabled:opacity-60"
+          className="flex items-center justify-center gap-2 rounded-full border-2 border-success py-3 text-[0.95rem] font-semibold text-success transition-colors hover:bg-success/10 disabled:opacity-60"
         >
-          <span>
-            <p className="font-semibold text-text-primary">Enviar pedido pelo WhatsApp</p>
-            <p className="text-[0.85rem] text-text-secondary">Combina o pagamento direto com a Ale, sem precisar se identificar aqui</p>
-          </span>
           {loading && <Spinner />}
+          Enviar pedido pelo WhatsApp
         </button>
+        <p className="text-center text-[0.8rem] text-text-secondary">Combina o pagamento direto com a Ale, sem precisar se identificar aqui</p>
       </div>
 
       {!pixOk && (
