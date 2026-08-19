@@ -2,17 +2,21 @@ import { formatPrice } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 
-export default function ProductCard({ product }) {
+export default function ProductCard({ product, onOpenDetail }) {
   const { addItem } = useCart();
   const { showToast } = useToast();
 
-  const handleAdd = () => {
+  const handleAdd = (e) => {
+    e.stopPropagation();
     addItem(product);
     showToast(`${product.name} adicionado à sacola!`, 'success');
   };
 
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-card border border-border-light bg-bg-main transition-shadow duration-200 hover:shadow-md">
+    <article
+      onClick={() => onOpenDetail?.(product)}
+      className="group relative flex cursor-pointer flex-col overflow-hidden rounded-card border border-border-light bg-bg-main transition-shadow duration-200 hover:shadow-md"
+    >
       <div className="relative aspect-square overflow-hidden bg-bg-alt">
         <img
           src={product.image}

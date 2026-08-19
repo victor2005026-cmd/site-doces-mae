@@ -4,6 +4,7 @@ import { useAdminProducts } from '../context/AdminProductsContext';
 import CategoryBar from './CategoryBar';
 import ProductSection from './ProductSection';
 import ProductCardSkeleton from './ProductCardSkeleton';
+import ProductDetailModal from './ProductDetailModal';
 
 const GROUPS = CATEGORIES.filter((cat) => cat.id !== 'todos');
 const SCROLL_OFFSET = 140;
@@ -11,6 +12,7 @@ const SCROLL_OFFSET = 140;
 export default function Menu({ query = '' }) {
   const { activeProducts, loading } = useAdminProducts();
   const [active, setActive] = useState(GROUPS[0].id);
+  const [produtoDetalhe, setProdutoDetalhe] = useState(null);
   const sectionRefs = useRef({});
   const normalizedQuery = query.trim().toLowerCase();
 
@@ -82,7 +84,7 @@ export default function Menu({ query = '' }) {
       )}
 
       {visibleFeatured.length > 0 && (
-        <ProductSection id="destaques" title="Destaques" products={visibleFeatured} />
+        <ProductSection id="destaques" title="Destaques" products={visibleFeatured} onOpenDetail={setProdutoDetalhe} />
       )}
 
       {visibleGroups.map(
@@ -93,12 +95,15 @@ export default function Menu({ query = '' }) {
               id={group.id}
               title={group.label}
               products={group.products}
+              onOpenDetail={setProdutoDetalhe}
               ref={(el) => {
                 sectionRefs.current[group.id] = el;
               }}
             />
           )
       )}
+
+      <ProductDetailModal product={produtoDetalhe} onClose={() => setProdutoDetalhe(null)} />
     </div>
   );
 }
