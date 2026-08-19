@@ -13,7 +13,6 @@ import { notificarPedidoNovoPorEmail } from '../lib/emailNotificacao';
 import { notificarPedidoNovoPorWhatsApp } from '../lib/whatsappNotificacao';
 import AuthModal from '../components/AuthModal';
 import Spinner from '../components/Spinner';
-import EnderecoAutocomplete from '../components/EnderecoAutocomplete';
 
 const ArrowLeftIcon = (props) => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" {...props}>
@@ -285,10 +284,6 @@ function StepEntrega({ config, taxasEntrega, onNext, onBack, setEntrega, entrega
     setTaxaResolvida(freteAtivo ? Number(match.taxa) : 0);
   }, [tipo, end.cidade, end.bairro, taxasEntrega, freteAtivo]);
 
-  const handleSelecionarEndereco = (sel) => {
-    setEnd((p) => ({ ...p, ...sel }));
-  };
-
   const enderecoIncompleto = tipo === 'entrega' && (!end.rua.trim() || !end.numero.trim());
 
   const handleNext = () => {
@@ -344,13 +339,6 @@ function StepEntrega({ config, taxasEntrega, onNext, onBack, setEntrega, entrega
               </p>
             </details>
           )}
-
-          <div>
-            <EnderecoAutocomplete onSelect={handleSelecionarEndereco} />
-            <p className="mt-1 text-[0.78rem] text-text-secondary">
-              Atalho opcional — se preferir, é só preencher os campos abaixo direto, sem precisar buscar.
-            </p>
-          </div>
 
           <div>
             <label className="mb-1 block text-[0.85rem] font-medium text-text-primary">CEP</label>
