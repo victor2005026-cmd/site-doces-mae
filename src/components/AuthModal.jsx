@@ -232,55 +232,177 @@ function CadastroForm({ onSuccess }) {
   );
 }
 
-function abrirWhatsAppEsqueciSenha() {
-  window.open(waLink('Olá! Esqueci minha senha da conta Doces da Ale. Pode me ajudar a resetar?'), '_blank');
+function RecuperarSenhaView({ onVoltar }) {
+  const { buscarRecuperacaoSenha, enviarLinkResetSenha } = useAuth();
+  const [tel, setTel] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [erro, setErro] = useState('');
+  const [resultado, setResultado] = useState(null); // 'nao-encontrado' | 'sem-email' | { email }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErro('');
+    setResultado(null);
+    if (!validarTelefone(tel)) {
+      setErro('Telefone inválido. Use DDD + número (ex: 13912345678).');
+      return;
+    }
+    setLoading(true);
+    const { encontrado, email, error } = await buscarRecuperacaoSenha(tel);
+    if (error) {
+      setErro('Não consegui verificar esse telefone agora. Tente novamente.');
+      setLoading(false);
+      return;
+    }
+    if (!encontrado) {
+      setResultado('nao-encontrado');
+      setLoading(false);
+      return;
+    }
+    if (!email) {
+      setResultado('sem-email');
+      setLoading(false);
+      return;
+    }
+    const { error: sendError } = await enviarLinkResetSenha(email);
+    setLoading(false);
+    if (sendError) {
+      setErro('Não consegui enviar o e-mail agora. Tente novamente em instantes.');
+      return;
+    }
+    setResultado({ email });
+  };
+
+  if (resultado === 'nao-encontrado') {
+    return (
+      <div className="flex flex-col gap-4 text-center">
+        <p className="text-[0.92rem] text-text-primary">Telefone não encontrado. Verifique o número ou crie uma conta.</p>
+        <button type="button" onClick={onVoltar} className="text-[0.85rem] text-rose underline">← Voltar</button>
+      </div>
+    );
+  }
+
+  if (resultado === 'sem-email') {
+    return (
+      <div className="flex flex-col gap-4 text-center">
+        <p className="text-[0.92rem] text-text-primary">
+          Esse telefone ainda não tem e-mail cadastrado pra recuperação automática.
+        </p>
+        <a
+          href={waLink('Olá! Esqueci minha senha da conta Doces da Ale. Pode me ajudar?')}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="rounded-full bg-success py-2.5 text-center text-[0.9rem] font-semibold text-white hover:bg-[#268a41]"
+        >
+          Falar no WhatsApp
+        </a>
+        <button type="button" onClick={onVoltar} className="text-[0.85rem] text-text-secondary underline">← Voltar</button>
+      </div>
+    );
+  }
+
+  if (resultado?.email) {
+    return (
+      <div className="flex flex-col gap-4 text-center">
+        <p className="text-[1.5rem]">✓</p>
+        <p className="text-[0.92rem] text-text-primary">
+          Enviamos um link pra <strong>{maskEmail(resultado.email)}</strong>. Clique nele pra criar uma nova senha.
+        </p>
+        <button type="button" onClick={onVoltar} className="text-[0.85rem] text-rose underline">← Voltar ao login</button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <p className="text-[0.85rem] text-text-secondary">Digite seu telefone pra recuperar o acesso à sua conta.</p>
+      <div>
+        <label htmlFor="rec-tel" className={labelClass}>Telefone / WhatsApp</label>
+        <input
+          id="rec-tel"
+          type="tel"
+          inputMode="numeric"
+          value={formatarTelefone(tel)}
+          onChange={(e) => setTel(e.target.value)}
+          placeholder="(13) 99999-9999"
+          autoComplete="tel"
+          className={inputClass}
+        />
+      </div>
+      {erro && <p className={errorClass}>{erro}</p>}
+      <button
+        type="submit"
+        disabled={loading}
+        className="rounded-full bg-rose py-2.5 text-[0.95rem] font-semibold text-white transition-colors hover:bg-rose-dark disabled:opacity-60"
+      >
+        {loading ? 'Verificando…' : 'Continuar'}
+      </button>
+      <button type="button" onClick={onVoltar} className="text-[0.85rem] text-text-secondary underline">← Voltar ao login</button>
+    </form>
+  );
 }
 
 export default function AuthModal({ isOpen, initialTab = 'login', onClose }) {
   const [tab, setTab] = useState(initialTab);
+  const [view, setView] = useState('form'); // 'form' | 'recuperar'
 
   if (!isOpen) return null;
 
   const handleSuccess = () => onClose();
 
+  const handleClose = () => {
+    setView('form');
+    onClose();
+  };
+
   return (
     <div
       className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 p-4"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onClick={(e) => { if (e.target === e.currentTarget) handleClose(); }}
     >
       <div className="w-full max-w-[400px] rounded-card bg-bg-main p-6 shadow-lg">
         <div className="mb-5 flex items-center justify-between">
-          <div className="flex gap-1 rounded-full border border-border-light p-1">
-            {['login', 'cadastro'].map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setTab(t)}
-                className={`rounded-full px-4 py-1.5 text-[0.85rem] font-medium transition-colors ${
-                  tab === t ? 'bg-rose text-white' : 'text-text-secondary hover:text-text-primary'
-                }`}
-              >
-                {t === 'login' ? 'Entrar' : 'Criar conta'}
-              </button>
-            ))}
-          </div>
-          <button type="button" onClick={onClose} className="text-[1.2rem] text-text-secondary hover:text-rose">
+          {view === 'form' ? (
+            <div className="flex gap-1 rounded-full border border-border-light p-1">
+              {['login', 'cadastro'].map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTab(t)}
+                  className={`rounded-full px-4 py-1.5 text-[0.85rem] font-medium transition-colors ${
+                    tab === t ? 'bg-rose text-white' : 'text-text-secondary hover:text-text-primary'
+                  }`}
+                >
+                  {t === 'login' ? 'Entrar' : 'Criar conta'}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <h2 className="font-heading text-[1.05rem] font-semibold text-text-primary">Recuperar senha</h2>
+          )}
+          <button type="button" onClick={handleClose} className="text-[1.2rem] text-text-secondary hover:text-rose">
             ×
           </button>
         </div>
 
-        {tab === 'login'
-          ? <LoginForm onSuccess={handleSuccess} onForgot={abrirWhatsAppEsqueciSenha} />
-          : <CadastroForm onSuccess={handleSuccess} />
-        }
+        {view === 'recuperar' ? (
+          <RecuperarSenhaView onVoltar={() => setView('form')} />
+        ) : (
+          <>
+            {tab === 'login'
+              ? <LoginForm onSuccess={handleSuccess} onForgot={() => setView('recuperar')} />
+              : <CadastroForm onSuccess={handleSuccess} />
+            }
 
-        {tab === 'login' && (
-          <p className="mt-4 text-center text-[0.82rem] text-text-secondary">
-            Não tem conta?{' '}
-            <button type="button" onClick={() => setTab('cadastro')} className="text-rose underline">
-              Criar agora
-            </button>
-          </p>
+            {tab === 'login' && (
+              <p className="mt-4 text-center text-[0.82rem] text-text-secondary">
+                Não tem conta?{' '}
+                <button type="button" onClick={() => setTab('cadastro')} className="text-rose underline">
+                  Criar agora
+                </button>
+              </p>
+            )}
+          </>
         )}
       </div>
     </div>

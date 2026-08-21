@@ -150,6 +150,22 @@ export function AuthProvider({ children }) {
     return { error };
   };
 
+  // Consulta pública (não precisa estar logado) — usada na tela "Esqueci minha senha".
+  // Retorna null se o telefone não existe, ou o e-mail confirmado (pode ser null) se existir.
+  const buscarRecuperacaoSenha = async (telefone) => {
+    const { data, error } = await supabase.rpc('buscar_recuperacao_senha', { p_telefone: telefone.replace(/\D/g, '') });
+    if (error) return { encontrado: false, email: null, error };
+    if (!data || data.length === 0) return { encontrado: false, email: null, error: null };
+    return { encontrado: true, email: data[0].email, error: null };
+  };
+
+  const enviarLinkResetSenha = async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/redefinir-senha`,
+    });
+    return { error };
+  };
+
   // Usado só na tela /redefinir-senha, dentro de uma sessão de recuperação (PASSWORD_RECOVERY)
   const definirNovaSenhaRecuperacao = async (novaSenha) => {
     const { error } = await supabase.auth.updateUser({ password: novaSenha });
@@ -165,7 +181,7 @@ export function AuthProvider({ children }) {
       value={{
         user, perfil, loading, isAdmin, primeiroNome, recuperandoSenha,
         login, cadastrar, logout, changePassword, updatePerfil,
-        solicitarEmailRecuperacao, definirNovaSenhaRecuperacao,
+        solicitarEmailRecuperacao, buscarRecuperacaoSenha, enviarLinkResetSenha, definirNovaSenhaRecuperacao,
       }}
     >
       {children}
