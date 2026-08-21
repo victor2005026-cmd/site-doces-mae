@@ -139,18 +139,25 @@ export function AdminProductsProvider({ children }) {
   };
 
   const addProduct = async (data) => {
-    const { error } = await supabase.from('produtos').insert(productToRow({ ...data, active: true }));
+    const { data: criado, error } = await supabase
+      .from('produtos')
+      .insert(productToRow({ ...data, active: true }))
+      .select()
+      .single();
     if (error) console.error('Erro ao criar produto:', error);
+    else setProducts((prev) => [...prev, rowToProduct(criado)]);
     return { error };
   };
 
   const updateProduct = async (id, data) => {
+    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, ...data } : p)));
     const { error } = await supabase.from('produtos').update(productToRow(data)).eq('id', id);
     if (error) console.error('Erro ao atualizar produto:', error);
     return { error };
   };
 
   const deleteProduct = async (id) => {
+    setProducts((prev) => prev.filter((p) => p.id !== id));
     const { error } = await supabase.from('produtos').delete().eq('id', id);
     if (error) console.error('Erro ao deletar produto:', error);
     return { error };
@@ -159,6 +166,7 @@ export function AdminProductsProvider({ children }) {
   const toggleActive = async (id) => {
     const product = products.find((p) => p.id === id);
     if (!product) return;
+    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, active: !p.active } : p)));
     const { error } = await supabase.from('produtos').update({ ativo: !product.active }).eq('id', id);
     if (error) console.error('Erro ao atualizar produto:', error);
   };
@@ -166,8 +174,19 @@ export function AdminProductsProvider({ children }) {
   const toggleMostSold = async (id) => {
     const product = products.find((p) => p.id === id);
     if (!product) return;
+    setProducts((prev) => prev.map((p) => (p.id === id ? { ...p, mostSold: !p.mostSold } : p)));
     const { error } = await supabase.from('produtos').update({ mais_vendido: !product.mostSold }).eq('id', id);
     if (error) console.error('Erro ao atualizar produto:', error);
+  };
+
+  // Recebe os produtos de UMA categoria já na nova ordem e reescreve a
+  // posição de todos — atualiza a tela na hora, sem esperar o tempo real.
+  const reordenarProdutos = async (produtosOrdenados) => {
+    const mapaOrdem = new Map(produtosOrdenados.map((p, i) => [p.id, i]));
+    setProducts((prev) => prev.map((p) => (mapaOrdem.has(p.id) ? { ...p, order: mapaOrdem.get(p.id) } : p)));
+    await Promise.all(
+      produtosOrdenados.map((p, i) => supabase.from('produtos').update({ ordem: i }).eq('id', p.id))
+    );
   };
 
   const activeProducts = products.filter((p) => p.active);
@@ -185,6 +204,7 @@ export function AdminProductsProvider({ children }) {
         deleteProduct,
         toggleActive,
         toggleMostSold,
+        reordenarProdutos,
         saveHours,
         saveImagemSite,
       }}

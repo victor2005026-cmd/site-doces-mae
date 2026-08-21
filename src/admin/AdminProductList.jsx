@@ -6,12 +6,20 @@ import AdminProductForm from './AdminProductForm';
 
 const GRUPOS_CATEGORIA = CATEGORIES.filter((c) => c.id !== 'todos');
 
+const GripIcon = (props) => (
+  <svg width="14" height="20" viewBox="0 0 14 20" fill="currentColor" {...props}>
+    <circle cx="4" cy="4" r="1.6" /><circle cx="10" cy="4" r="1.6" />
+    <circle cx="4" cy="10" r="1.6" /><circle cx="10" cy="10" r="1.6" />
+    <circle cx="4" cy="16" r="1.6" /><circle cx="10" cy="16" r="1.6" />
+  </svg>
+);
+
 export default function AdminProductList() {
-  const { products, loading, toggleActive, toggleMostSold, deleteProduct, updateProduct } = useAdminProducts();
+  const { products, loading, toggleActive, toggleMostSold, deleteProduct, reordenarProdutos } = useAdminProducts();
   const [editing, setEditing] = useState(null); // null | product | 'new'
   const [deletingId, setDeletingId] = useState(null);
-  const [movingId, setMovingId] = useState(null);
   const [feedback, setFeedback] = useState('');
+  const [arrastando, setArrastando] = useState(null); // { categoria, index } | null
 
   const handleDelete = async (product) => {
     if (!window.confirm(`Excluir "${product.name}"? Essa ação não pode ser desfeita.`)) return;
@@ -26,16 +34,17 @@ export default function AdminProductList() {
   };
 
   // Reordena dentro da mesma categoria (é o que decide a ordem que aparece
-  // no cardápio do site) e reescreve a posição de todo mundo do grupo, pra
-  // não depender de valores de "ordem" antigos/empatados.
-  const mover = async (produtosCategoria, index, direcao) => {
-    const alvo = index + direcao;
-    if (alvo < 0 || alvo >= produtosCategoria.length) return;
-    setMovingId(produtosCategoria[index].id);
+  // no cardápio do site), soltando um item na posição de outro.
+  const handleDrop = (produtosCategoria, categoriaId, indexAlvo) => {
+    if (!arrastando || arrastando.categoria !== categoriaId || arrastando.index === indexAlvo) {
+      setArrastando(null);
+      return;
+    }
     const nova = [...produtosCategoria];
-    [nova[index], nova[alvo]] = [nova[alvo], nova[index]];
-    await Promise.all(nova.map((p, i) => updateProduct(p.id, { order: i })));
-    setMovingId(null);
+    const [item] = nova.splice(arrastando.index, 1);
+    nova.splice(indexAlvo, 0, item);
+    setArrastando(null);
+    reordenarProdutos(nova);
   };
 
   return (
@@ -58,7 +67,7 @@ export default function AdminProductList() {
 
       {!loading && (
         <p className="mb-4 text-[0.8rem] text-text-secondary">
-          Use as setas ↑↓ pra decidir a ordem que os doces aparecem pro cliente, categoria por categoria.
+          Arraste pela alça (⠿) pra decidir a ordem que os doces aparecem pro cliente, categoria por categoria.
         </p>
       )}
 
@@ -73,27 +82,17 @@ export default function AdminProductList() {
               {produtosCategoria.map((product, index) => (
                 <li
                   key={product.id}
-                  className="flex items-center gap-3 border-b border-border-light px-5 py-4 last:border-b-0"
+                  draggable
+                  onDragStart={() => setArrastando({ categoria: cat.id, index })}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => handleDrop(produtosCategoria, cat.id, index)}
+                  onDragEnd={() => setArrastando(null)}
+                  className={`flex items-center gap-3 border-b border-border-light px-5 py-4 last:border-b-0 ${
+                    arrastando?.categoria === cat.id && arrastando?.index === index ? 'opacity-40' : ''
+                  }`}
                 >
-                  <div className="flex flex-shrink-0 flex-col gap-0.5">
-                    <button
-                      type="button"
-                      onClick={() => mover(produtosCategoria, index, -1)}
-                      disabled={index === 0 || movingId !== null}
-                      aria-label={`Mover ${product.name} pra cima`}
-                      className="flex h-6 w-6 items-center justify-center rounded text-text-secondary hover:bg-bg-alt hover:text-rose disabled:opacity-30"
-                    >
-                      ▲
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => mover(produtosCategoria, index, 1)}
-                      disabled={index === produtosCategoria.length - 1 || movingId !== null}
-                      aria-label={`Mover ${product.name} pra baixo`}
-                      className="flex h-6 w-6 items-center justify-center rounded text-text-secondary hover:bg-bg-alt hover:text-rose disabled:opacity-30"
-                    >
-                      ▼
-                    </button>
+                  <div className="flex h-14 flex-shrink-0 cursor-grab items-center justify-center text-text-secondary/60 hover:text-text-secondary active:cursor-grabbing">
+                    <GripIcon />
                   </div>
 
                   <img
