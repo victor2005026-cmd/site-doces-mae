@@ -14,8 +14,9 @@ const EMPTY = {
   name: '',
   description: '',
   price: '',
-  category: 'tradicionais',
+  category: 'gourmet',
   badge: '',
+  units: '',
 };
 
 function formatKB(bytes) {
@@ -35,6 +36,7 @@ export default function AdminProductForm({ product, onClose }) {
           price: String(product.price),
           category: product.category,
           badge: product.badge ?? '',
+          units: product.units != null ? String(product.units) : '',
         }
       : { ...EMPTY }
   );
@@ -103,6 +105,7 @@ export default function AdminProductForm({ product, onClose }) {
         image: imageUrl || '/images/prod-tradicional.jpg',
         badge: form.badge.trim() || undefined,
         active: product ? product.active : true,
+        units: form.units.trim() ? parseInt(form.units, 10) : null,
       };
 
       const { error } = isEdit ? await updateProduct(product.id, data) : await addProduct(data);
@@ -229,13 +232,31 @@ export default function AdminProductForm({ product, onClose }) {
             </div>
           </div>
 
-          {/* Badge */}
-          <div>
-            <label htmlFor="prod-badge" className={labelClass}>
-              Badge{' '}
-              <span className="font-normal text-text-secondary">(opcional — ex: "Mais vendido", "Novidade")</span>
-            </label>
-            <input id="prod-badge" value={form.badge} onChange={set('badge')} className={inputClass} />
+          {/* Badge + Unidades */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="prod-badge" className={labelClass}>
+                Badge{' '}
+                <span className="font-normal text-text-secondary">(opcional)</span>
+              </label>
+              <input id="prod-badge" value={form.badge} onChange={set('badge')} placeholder='Ex: "Novidade"' className={inputClass} />
+            </div>
+            <div>
+              <label htmlFor="prod-units" className={labelClass}>
+                Quantas unidades vêm{' '}
+                <span className="font-normal text-text-secondary">(opcional)</span>
+              </label>
+              <input
+                id="prod-units"
+                type="number"
+                min="1"
+                step="1"
+                value={form.units}
+                onChange={set('units')}
+                placeholder="Ex: 4"
+                className={inputClass}
+              />
+            </div>
           </div>
 
           <div className="mt-2 flex gap-3">

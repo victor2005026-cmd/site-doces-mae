@@ -48,6 +48,7 @@ function rowToProduct(row) {
     active: row.ativo,
     mostSold: row.mais_vendido,
     order: row.ordem,
+    units: row.unidades ?? null,
   };
 }
 
@@ -63,6 +64,7 @@ function productToRow(data) {
   if (data.mostSold !== undefined) row.mais_vendido = data.mostSold;
   else if (data.badge !== undefined) row.mais_vendido = Boolean(data.badge);
   if (data.order !== undefined) row.ordem = data.order;
+  if (data.units !== undefined) row.unidades = data.units;
   return row;
 }
 

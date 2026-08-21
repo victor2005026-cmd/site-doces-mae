@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS public.produtos (
   ativo         boolean     NOT NULL DEFAULT true,
   mais_vendido  boolean     NOT NULL DEFAULT false,
   ordem         int         NOT NULL DEFAULT 0,
+  unidades      int,        -- quantas peças vêm nesse produto (ex: 4) — null/vazio = não mostra
   created_at    timestamptz NOT NULL DEFAULT now()
 );
 
@@ -734,3 +735,10 @@ ON CONFLICT (codigo) DO NOTHING;
 -- END;
 -- $$;
 -- GRANT EXECUTE ON FUNCTION public.criar_pedido_convidado(jsonb, jsonb) TO anon, authenticated;
+
+-- ============================================================
+-- MIGRAÇÃO (projetos já existentes): quantidade de unidades que
+-- vêm no produto (ex: "vem 4 unidades"), editável no admin e
+-- mostrada pro cliente no cardápio.
+-- ============================================================
+-- ALTER TABLE public.produtos ADD COLUMN IF NOT EXISTS unidades int;
