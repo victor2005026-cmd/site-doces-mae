@@ -62,6 +62,7 @@ function productToRow(data) {
   if (data.active !== undefined) row.ativo = data.active;
   if (data.mostSold !== undefined) row.mais_vendido = data.mostSold;
   else if (data.badge !== undefined) row.mais_vendido = Boolean(data.badge);
+  if (data.order !== undefined) row.ordem = data.order;
   return row;
 }
 
