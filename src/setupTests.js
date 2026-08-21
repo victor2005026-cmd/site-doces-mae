@@ -15,3 +15,18 @@ class IntersectionObserverMock {
   disconnect() {}
 }
 window.IntersectionObserver = IntersectionObserverMock;
+
+// jsdom também não implementa matchMedia (usado pelo CartDrawer pra travar
+// o scroll do body só no mobile)
+window.matchMedia = window.matchMedia || function matchMediaMock(query) {
+  return {
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: () => {},
+    removeListener: () => {},
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => false,
+  };
+};

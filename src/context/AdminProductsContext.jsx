@@ -75,21 +75,31 @@ export function AdminProductsProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState(null);
 
+  // try/catch aqui não é só formalidade: sem ele, uma falha de REDE (não um
+  // "error" normal de resposta do Supabase, mas por ex. o cliente ficar
+  // offline no meio da requisição) derruba essa promise sem nunca cair no
+  // fallback nem tirar a tela do "carregando" — trava assim pra sempre.
   const fetchProducts = useCallback(async () => {
-    const { data, error } = await supabase.from('produtos').select('*').order('ordem', { ascending: true });
-    if (error) {
-      console.error('Erro ao buscar produtos do Supabase, usando fallback local:', error);
-      setProducts(SEED_FALLBACK);
-    } else {
+    try {
+      const { data, error } = await supabase.from('produtos').select('*').order('ordem', { ascending: true });
+      if (error) throw error;
       setProducts((data ?? []).map(rowToProduct));
+    } catch (err) {
+      console.error('Erro ao buscar produtos do Supabase, usando fallback local:', err);
+      setProducts(SEED_FALLBACK);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   const fetchConfig = useCallback(async () => {
-    const { data, error } = await supabase.from('configuracoes').select('*').eq('id', 1).single();
-    if (error) console.error('Erro ao buscar configurações:', error);
-    else setConfig(data);
+    try {
+      const { data, error } = await supabase.from('configuracoes').select('*').eq('id', 1).single();
+      if (error) throw error;
+      setConfig(data);
+    } catch (err) {
+      console.error('Erro ao buscar configurações:', err);
+    }
   }, []);
 
   useEffect(() => {
