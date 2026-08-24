@@ -43,9 +43,6 @@ export default function Footer() {
         </div>
 
         <p className="text-[0.8rem] text-text-secondary">&copy; 2026 Doces da Ale. Todos os direitos reservados.</p>
-        <Link to="/admin" className="text-[0.78rem] text-text-secondary underline hover:text-rose">
-          Painel de imagens
-        </Link>
       </div>
     </footer>
   );
