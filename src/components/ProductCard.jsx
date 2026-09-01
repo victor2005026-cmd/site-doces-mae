@@ -34,8 +34,12 @@ export default function ProductCard({ product, onOpenDetail }) {
       <div className="flex flex-1 flex-col p-3 sm:p-4">
         <h3 className="font-heading text-[0.95rem] font-semibold text-text-primary sm:text-[1.05rem]">{product.name}</h3>
         <p className="mt-1 line-clamp-1 text-[0.8rem] text-text-secondary sm:text-[0.85rem]">{product.description}</p>
-        {product.units > 1 && (
-          <p className="mt-0.5 text-[0.75rem] font-medium text-gold-dark">Vem {product.units} unidades</p>
+        {(product.units > 1 || product.grams > 0) && (
+          <p className="mt-0.5 text-[0.75rem] font-medium text-gold-dark">
+            {product.units > 1 ? `Vem ${product.units} unidades` : ''}
+            {product.units > 1 && product.grams > 0 ? ' · ' : ''}
+            {product.grams > 0 ? `${product.grams}g ${product.units > 1 ? 'cada' : 'por unidade'}` : ''}
+          </p>
         )}
 
         <div className="mt-3 flex items-center justify-between">

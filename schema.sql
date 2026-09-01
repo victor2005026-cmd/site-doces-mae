@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS public.produtos (
   mais_vendido  boolean     NOT NULL DEFAULT false,
   ordem         int         NOT NULL DEFAULT 0,
   unidades      int,        -- quantas peças vêm nesse produto (ex: 4) — null/vazio = não mostra
+  gramas        int,        -- peso de cada brigadeiro em gramas (ex: 18) — null/vazio = não mostra
   created_at    timestamptz NOT NULL DEFAULT now()
 );
 
@@ -742,3 +743,4 @@ ON CONFLICT (codigo) DO NOTHING;
 -- mostrada pro cliente no cardápio.
 -- ============================================================
 -- ALTER TABLE public.produtos ADD COLUMN IF NOT EXISTS unidades int;
+-- ALTER TABLE public.produtos ADD COLUMN IF NOT EXISTS gramas int;

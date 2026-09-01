@@ -49,6 +49,7 @@ function rowToProduct(row) {
     mostSold: row.mais_vendido,
     order: row.ordem,
     units: row.unidades ?? null,
+    grams: row.gramas ?? null,
   };
 }
 
@@ -65,6 +66,7 @@ function productToRow(data) {
   else if (data.badge !== undefined) row.mais_vendido = Boolean(data.badge);
   if (data.order !== undefined) row.ordem = data.order;
   if (data.units !== undefined) row.unidades = data.units;
+  if (data.grams !== undefined) row.gramas = data.grams;
   return row;
 }
 

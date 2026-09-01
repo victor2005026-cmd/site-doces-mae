@@ -17,6 +17,7 @@ const EMPTY = {
   category: 'gourmet',
   badge: '',
   units: '',
+  grams: '',
 };
 
 function formatKB(bytes) {
@@ -37,6 +38,7 @@ export default function AdminProductForm({ product, onClose }) {
           category: product.category,
           badge: product.badge ?? '',
           units: product.units != null ? String(product.units) : '',
+          grams: product.grams != null ? String(product.grams) : '',
         }
       : { ...EMPTY }
   );
@@ -106,6 +108,7 @@ export default function AdminProductForm({ product, onClose }) {
         badge: form.badge.trim() || undefined,
         active: product ? product.active : true,
         units: form.units.trim() ? parseInt(form.units, 10) : null,
+        grams: form.grams.trim() ? parseInt(form.grams, 10) : null,
       };
 
       const { error } = isEdit ? await updateProduct(product.id, data) : await addProduct(data);
@@ -232,15 +235,17 @@ export default function AdminProductForm({ product, onClose }) {
             </div>
           </div>
 
-          {/* Badge + Unidades */}
+          {/* Badge */}
+          <div>
+            <label htmlFor="prod-badge" className={labelClass}>
+              Badge{' '}
+              <span className="font-normal text-text-secondary">(opcional)</span>
+            </label>
+            <input id="prod-badge" value={form.badge} onChange={set('badge')} placeholder='Ex: "Novidade"' className={inputClass} />
+          </div>
+
+          {/* Unidades + Gramas */}
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="prod-badge" className={labelClass}>
-                Badge{' '}
-                <span className="font-normal text-text-secondary">(opcional)</span>
-              </label>
-              <input id="prod-badge" value={form.badge} onChange={set('badge')} placeholder='Ex: "Novidade"' className={inputClass} />
-            </div>
             <div>
               <label htmlFor="prod-units" className={labelClass}>
                 Quantas unidades vêm{' '}
@@ -254,6 +259,22 @@ export default function AdminProductForm({ product, onClose }) {
                 value={form.units}
                 onChange={set('units')}
                 placeholder="Ex: 4"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label htmlFor="prod-grams" className={labelClass}>
+                Gramas por unidade{' '}
+                <span className="font-normal text-text-secondary">(opcional)</span>
+              </label>
+              <input
+                id="prod-grams"
+                type="number"
+                min="1"
+                step="1"
+                value={form.grams}
+                onChange={set('grams')}
+                placeholder="Ex: 18"
                 className={inputClass}
               />
             </div>

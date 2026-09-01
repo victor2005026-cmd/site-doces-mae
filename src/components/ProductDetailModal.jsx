@@ -46,8 +46,12 @@ export default function ProductDetailModal({ product, onClose }) {
           <div>
             <h2 className="font-heading text-[1.2rem] font-semibold text-text-primary">{product.name}</h2>
             <p className="mt-1 text-[0.92rem] text-text-secondary">{product.description}</p>
-            {product.units > 1 && (
-              <p className="mt-1 text-[0.85rem] font-semibold text-gold-dark">Vem {product.units} unidades</p>
+            {(product.units > 1 || product.grams > 0) && (
+              <p className="mt-1 text-[0.85rem] font-semibold text-gold-dark">
+                {product.units > 1 ? `Vem ${product.units} unidades` : ''}
+                {product.units > 1 && product.grams > 0 ? ' · ' : ''}
+                {product.grams > 0 ? `${product.grams}g ${product.units > 1 ? 'cada' : 'por unidade'}` : ''}
+              </p>
             )}
           </div>
 
