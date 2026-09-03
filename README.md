@@ -2,6 +2,11 @@
 
 Cardápio digital com checkout completo, painel administrativo e integração Supabase.
 
+<img width="1917" height="864" alt="Captura de tela 2026-09-03 110615" src="https://github.com/user-attachments/assets/3d39c670-ad9a-48d5-96fa-7e285e912a01" />
+<img width="1913" height="864" alt="Captura de tela 2026-09-03 110605" src="https://github.com/user-attachments/assets/0b1c746e-f36e-4d93-bc2f-abee27c04bfd" />
+<img width="1913" height="861" alt="Captura de tela 2026-09-03 110553" src="https://github.com/user-attachments/assets/f0544ece-0243-42c5-83b9-281037a43878" />
+
+
 ## Como rodar localmente
 
 ```bash
