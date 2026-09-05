@@ -5,6 +5,8 @@ import { waLink } from '../lib/whatsapp';
 import { isoDateLocal } from '../lib/dateUtils';
 import { useAdminProducts } from '../context/AdminProductsContext';
 import { ULTIMA_VISTA_KEY } from './AdminDashboard';
+import { notificarPagamentoConfirmadoPorEmail } from '../lib/emailNotificacao';
+import { notificarPagamentoConfirmadoPorWhatsApp } from '../lib/whatsappNotificacao';
 
 const UMA_HORA_MS = 60 * 60 * 1000;
 
@@ -168,7 +170,7 @@ function NovoManualModal({ produtos, onClose, onSaved }) {
 }
 
 export default function AdminOrdersTab() {
-  const { products: produtosLocal } = useAdminProducts();
+  const { products: produtosLocal, config } = useAdminProducts();
   const [pedidos, setPedidos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtroData, setFiltroData] = useState('Hoje');
@@ -266,6 +268,10 @@ export default function AdminOrdersTab() {
 
   const confirmarPagamento = async (pedido) => {
     await supabase.from('pedidos').update({ status: 'recebido', pago: true, pago_em: new Date().toISOString() }).eq('id', pedido.id);
+    // Segundo aviso (e-mail + WhatsApp), separado do aviso de pedido novo —
+    // nunca deve travar a confirmação se falhar.
+    notificarPagamentoConfirmadoPorEmail(config, pedido).catch(() => {});
+    notificarPagamentoConfirmadoPorWhatsApp(pedido.id).catch(() => {});
     fetchPedidos();
     fetchAguardandoCount();
   };

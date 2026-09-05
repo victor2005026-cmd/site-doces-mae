@@ -744,3 +744,15 @@ ON CONFLICT (codigo) DO NOTHING;
 -- ============================================================
 -- ALTER TABLE public.produtos ADD COLUMN IF NOT EXISTS unidades int;
 -- ALTER TABLE public.produtos ADD COLUMN IF NOT EXISTS gramas int;
+
+-- ============================================================
+-- MIGRAÇÃO (projetos já existentes): segundo aviso (e-mail +
+-- WhatsApp) pra você mesma quando confirma que o Pix caiu no
+-- banco ("Confirmar pagamento" no admin), separado do aviso de
+-- "pedido novo" que já existe. Reaproveita notif_email_ativo,
+-- notif_whatsapp_ativo e notif_whatsapp_numero — só precisa de
+-- um Template ID novo no EmailJS (o de "pedido novo" tem o texto
+-- fixo de pedido novo, não dá pra reaproveitar o mesmo).
+-- ============================================================
+-- ALTER TABLE public.configuracoes ADD COLUMN IF NOT EXISTS emailjs_template_id_pagamento text;
+-- ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS notificacao_pagamento_whatsapp_enviada_em timestamptz;
