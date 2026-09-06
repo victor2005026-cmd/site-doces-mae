@@ -99,11 +99,11 @@ export default function AdminTaxasEntregaTab() {
           </div>
           <div>
             <label className={lbl}>Taxa (R$) {!freteAtivo && <span className="font-normal text-text-secondary">(não cobrada agora)</span>}</label>
-            <input type="number" step="0.5" min="0" placeholder="0,00" value={form.taxa} onChange={(e) => setForm((p) => ({ ...p, taxa: e.target.value }))} className={ic} />
+            <input type="number" onWheel={(e) => e.target.blur()} step="0.5" min="0" placeholder="0,00" value={form.taxa} onChange={(e) => setForm((p) => ({ ...p, taxa: e.target.value }))} className={ic} />
           </div>
           <div>
             <label className={lbl}>Ordem</label>
-            <input type="number" value={form.ordem} onChange={(e) => setForm((p) => ({ ...p, ordem: e.target.value }))} className={ic} />
+            <input type="number" onWheel={(e) => e.target.blur()} value={form.ordem} onChange={(e) => setForm((p) => ({ ...p, ordem: e.target.value }))} className={ic} />
           </div>
           <div className="flex items-end gap-2">
             <button type="submit" disabled={saving} className="rounded-full bg-rose px-5 py-2.5 text-[0.9rem] font-semibold text-white hover:bg-rose-dark disabled:opacity-60">

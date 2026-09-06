@@ -141,8 +141,8 @@ function NovoManualModal({ produtos, onClose, onSaved }) {
                   <option value="">Escolher produto…</option>
                   {produtos.map((p) => <option key={p.id} value={p.id}>{p.nome} – {formatPrice(p.preco)}</option>)}
                 </select>
-                <input type="number" min="1" value={l.qtd} onChange={(e) => setLinha(i, 'qtd', e.target.value)} className={ic} placeholder="Qtd" />
-                <input type="number" step="0.5" value={l.preco} onChange={(e) => setLinha(i, 'preco', e.target.value)} className={ic} placeholder="R$" />
+                <input type="number" onWheel={(e) => e.target.blur()} min="1" value={l.qtd} onChange={(e) => setLinha(i, 'qtd', e.target.value)} className={ic} placeholder="Qtd" />
+                <input type="number" onWheel={(e) => e.target.blur()} step="0.5" value={l.preco} onChange={(e) => setLinha(i, 'preco', e.target.value)} className={ic} placeholder="R$" />
               </div>
             ))}
             <button type="button" onClick={addLinha} className="text-[0.82rem] text-rose underline">+ Adicionar item</button>

@@ -204,15 +204,15 @@ export default function AdminSettingsTab() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label className={lbl}>Antecedência mínima (horas)</label>
-              <input type="number" min="1" value={cfg.antecedencia_minima_horas} onChange={setField('antecedencia_minima_horas')} className={ic} />
+              <input type="number" onWheel={(e) => e.target.blur()} min="1" value={cfg.antecedencia_minima_horas} onChange={setField('antecedencia_minima_horas')} className={ic} />
             </div>
             <div>
               <label className={lbl}>Taxa de entrega padrão (R$)</label>
-              <input type="number" step="0.5" min="0" value={cfg.taxa_entrega_padrao} onChange={setField('taxa_entrega_padrao')} className={ic} />
+              <input type="number" onWheel={(e) => e.target.blur()} step="0.5" min="0" value={cfg.taxa_entrega_padrao} onChange={setField('taxa_entrega_padrao')} className={ic} />
             </div>
             <div>
               <label className={lbl}>Pedido mínimo (R$)</label>
-              <input type="number" step="0.5" min="0" value={cfg.pedido_minimo} onChange={setField('pedido_minimo')} className={ic} />
+              <input type="number" onWheel={(e) => e.target.blur()} step="0.5" min="0" value={cfg.pedido_minimo} onChange={setField('pedido_minimo')} className={ic} />
             </div>
           </div>
           <p className="mt-2 text-[0.78rem] text-text-secondary">

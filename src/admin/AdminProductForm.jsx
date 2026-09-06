@@ -212,7 +212,7 @@ export default function AdminProductForm({ product, onClose }) {
               </label>
               <input
                 id="prod-price"
-                type="number"
+                type="number" onWheel={(e) => e.target.blur()}
                 step="0.5"
                 min="0"
                 required
@@ -253,7 +253,7 @@ export default function AdminProductForm({ product, onClose }) {
               </label>
               <input
                 id="prod-units"
-                type="number"
+                type="number" onWheel={(e) => e.target.blur()}
                 min="1"
                 step="1"
                 value={form.units}
@@ -269,7 +269,7 @@ export default function AdminProductForm({ product, onClose }) {
               </label>
               <input
                 id="prod-grams"
-                type="number"
+                type="number" onWheel={(e) => e.target.blur()}
                 min="1"
                 step="1"
                 value={form.grams}

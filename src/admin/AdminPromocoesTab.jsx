@@ -150,7 +150,7 @@ export default function AdminPromocoesTab() {
               <div>
                 <label className={lbl}>Leve quantas unidades</label>
                 <input
-                  type="number"
+                  type="number" onWheel={(e) => e.target.blur()}
                   min="2"
                   value={form.quantidade}
                   onChange={(e) => setForm((p) => ({ ...p, quantidade: e.target.value }))}
@@ -160,7 +160,7 @@ export default function AdminPromocoesTab() {
               <div>
                 <label className={lbl}>Por quanto no total (R$)</label>
                 <input
-                  type="number"
+                  type="number" onWheel={(e) => e.target.blur()}
                   step="0.5"
                   min="0"
                   value={form.precoPromocional}

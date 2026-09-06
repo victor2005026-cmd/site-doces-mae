@@ -133,11 +133,11 @@ export default function AdminCuponsTab() {
           </div>
           <div>
             <label className={lbl}>Valor {form.tipo === 'percentual' ? '(%)' : '(R$)'}</label>
-            <input required type="number" step="0.5" min="0" value={form.valor} onChange={(e) => setForm((p) => ({ ...p, valor: e.target.value }))} className={ic} />
+            <input required type="number" onWheel={(e) => e.target.blur()} step="0.5" min="0" value={form.valor} onChange={(e) => setForm((p) => ({ ...p, valor: e.target.value }))} className={ic} />
           </div>
           <div>
             <label className={lbl}>Pedido mínimo (R$)</label>
-            <input type="number" step="0.5" min="0" value={form.valor_minimo_pedido} onChange={(e) => setForm((p) => ({ ...p, valor_minimo_pedido: e.target.value }))} className={ic} />
+            <input type="number" onWheel={(e) => e.target.blur()} step="0.5" min="0" value={form.valor_minimo_pedido} onChange={(e) => setForm((p) => ({ ...p, valor_minimo_pedido: e.target.value }))} className={ic} />
           </div>
           <div>
             <label className={lbl}>Validade até <span className="font-normal text-text-secondary">(opcional)</span></label>
@@ -145,7 +145,7 @@ export default function AdminCuponsTab() {
           </div>
           <div>
             <label className={lbl}>Usos máximos <span className="font-normal text-text-secondary">(vazio = ilimitado)</span></label>
-            <input type="number" min="1" value={form.usos_maximos} onChange={(e) => setForm((p) => ({ ...p, usos_maximos: e.target.value }))} className={ic} />
+            <input type="number" onWheel={(e) => e.target.blur()} min="1" value={form.usos_maximos} onChange={(e) => setForm((p) => ({ ...p, usos_maximos: e.target.value }))} className={ic} />
           </div>
           <div>
             <label className={lbl}>Telefone específico <span className="font-normal text-text-secondary">(opcional)</span></label>
