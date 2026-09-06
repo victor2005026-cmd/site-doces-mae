@@ -1,10 +1,11 @@
-import { formatPrice } from '../data/products';
+import { formatPrice, pesoLabel } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 
 export default function ProductCard({ product, onOpenDetail }) {
   const { addItem } = useCart();
   const { showToast } = useToast();
+  const peso = pesoLabel(product);
 
   const handleAdd = (e) => {
     e.stopPropagation();
@@ -34,12 +35,10 @@ export default function ProductCard({ product, onOpenDetail }) {
       <div className="flex flex-1 flex-col p-3 sm:p-4">
         <h3 className="font-heading text-[0.95rem] font-semibold text-text-primary sm:text-[1.05rem]">{product.name}</h3>
         <p className="mt-1 line-clamp-1 text-[0.8rem] text-text-secondary sm:text-[0.85rem]">{product.description}</p>
-        {(product.units > 1 || product.grams > 0) && (
-          <p className="mt-0.5 text-[0.75rem] font-medium text-gold-dark">
-            {product.units > 1 ? `Vem ${product.units} unidades` : ''}
-            {product.units > 1 && product.grams > 0 ? ' · ' : ''}
-            {product.grams > 0 ? `${product.grams}g ${product.units > 1 ? 'cada' : 'por unidade'}` : ''}
-          </p>
+        {peso && (
+          <span className="mt-1 inline-block w-fit whitespace-nowrap rounded-full bg-gold/15 px-2.5 py-1 text-[0.72rem] font-bold text-gold-dark">
+            {peso}
+          </span>
         )}
 
         <div className="mt-3 flex items-center justify-between">
