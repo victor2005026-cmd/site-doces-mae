@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import Spinner from '../components/Spinner';
+import PasswordField from '../components/PasswordField';
 
 const inputClass =
   'w-full rounded-card border border-border-light bg-bg-alt px-4 py-2.5 text-[0.95rem] outline-none focus:border-rose focus:ring-1 focus:ring-rose';
@@ -87,9 +88,8 @@ export default function RedefinirSenhaPage() {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4 rounded-card border border-border-light bg-bg-main p-6">
           <div>
             <label htmlFor="nova-senha" className={labelClass}>Nova senha (mín. 6 caracteres)</label>
-            <input
+            <PasswordField
               id="nova-senha"
-              type="password"
               value={novaSenha}
               onChange={(e) => setNovaSenha(e.target.value)}
               autoComplete="new-password"
@@ -98,9 +98,8 @@ export default function RedefinirSenhaPage() {
           </div>
           <div>
             <label htmlFor="confirma-senha" className={labelClass}>Confirmar nova senha</label>
-            <input
+            <PasswordField
               id="confirma-senha"
-              type="password"
               value={confirmar}
               onChange={(e) => setConfirmar(e.target.value)}
               autoComplete="new-password"

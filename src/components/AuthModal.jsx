@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { useAuth, formatarTelefone, validarTelefone } from '../context/AuthContext';
 import { waLink } from '../lib/whatsapp';
+import PasswordField from './PasswordField';
 
 const inputClass =
   'w-full rounded-card border border-border-light bg-bg-alt px-4 py-2.5 text-[0.95rem] outline-none focus:border-rose focus:ring-1 focus:ring-rose';
@@ -56,9 +57,8 @@ function LoginForm({ onSuccess, onForgot }) {
       </div>
       <div>
         <label htmlFor="login-senha" className={labelClass}>Senha</label>
-        <input
+        <PasswordField
           id="login-senha"
-          type="password"
           value={senha}
           onChange={(e) => setSenha(e.target.value)}
           autoComplete="current-password"
@@ -200,9 +200,8 @@ function CadastroForm({ onSuccess }) {
       </div>
       <div>
         <label htmlFor="cad-senha" className={labelClass}>Senha (mín. 6 caracteres)</label>
-        <input
+        <PasswordField
           id="cad-senha"
-          type="password"
           value={form.senha}
           onChange={set('senha')}
           autoComplete="new-password"
@@ -211,9 +210,8 @@ function CadastroForm({ onSuccess }) {
       </div>
       <div>
         <label htmlFor="cad-confirma" className={labelClass}>Confirmar senha</label>
-        <input
+        <PasswordField
           id="cad-confirma"
-          type="password"
           value={form.confirma}
           onChange={set('confirma')}
           autoComplete="new-password"

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import Spinner from './Spinner';
+import PasswordField from './PasswordField';
 
 const inputClass =
   'w-full rounded-card border border-border-light bg-bg-alt px-4 py-2.5 text-[0.95rem] outline-none focus:border-rose focus:ring-1 focus:ring-rose';
@@ -65,9 +66,8 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div>
             <label htmlFor="pw-atual" className={labelClass}>Senha atual</label>
-            <input
+            <PasswordField
               id="pw-atual"
-              type="password"
               value={senhaAtual}
               onChange={(e) => setSenhaAtual(e.target.value)}
               autoComplete="current-password"
@@ -76,9 +76,8 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
           </div>
           <div>
             <label htmlFor="pw-nova" className={labelClass}>Nova senha (mín. 6 caracteres)</label>
-            <input
+            <PasswordField
               id="pw-nova"
-              type="password"
               value={novaSenha}
               onChange={(e) => setNovaSenha(e.target.value)}
               autoComplete="new-password"
@@ -87,9 +86,8 @@ export default function ChangePasswordModal({ isOpen, onClose }) {
           </div>
           <div>
             <label htmlFor="pw-confirma" className={labelClass}>Confirmar nova senha</label>
-            <input
+            <PasswordField
               id="pw-confirma"
-              type="password"
               value={confirmar}
               onChange={(e) => setConfirmar(e.target.value)}
               autoComplete="new-password"

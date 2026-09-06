@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth, formatarTelefone } from '../context/AuthContext';
+import PasswordField from '../components/PasswordField';
 
 export default function AdminLogin({ onLogin }) {
   const { login } = useAuth();
@@ -52,9 +53,8 @@ export default function AdminLogin({ onLogin }) {
             <label htmlFor="admin-senha" className="mb-1 block text-[0.85rem] font-medium text-text-primary">
               Senha
             </label>
-            <input
+            <PasswordField
               id="admin-senha"
-              type="password"
               value={senha}
               onChange={(e) => setSenha(e.target.value)}
               autoComplete="current-password"
