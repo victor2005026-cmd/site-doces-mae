@@ -77,24 +77,39 @@ export default function AguardandoPagamentoPage() {
   const restante = expiraEm ? expiraEm - agora : null;
   const expirado = restante !== null && restante <= 0;
 
+  // Atualiza o status aguardando_pagamento -> outro: cliente logado segue
+  // pela RLS direta (dono do pedido); convidado não tem mais UPDATE direto
+  // na tabela (ver schema.sql) e passa pelas funções SECURITY DEFINER, que
+  // só agem em cima do número exato deste pedido.
+  const atualizarStatusPagamento = async (novoStatus, extra = {}) => {
+    if (pedido.usuario_id) {
+      const { error } = await supabase
+        .from('pedidos')
+        .update({ status: novoStatus, ...extra })
+        .eq('id', pedido.id)
+        .eq('status', 'aguardando_pagamento');
+      return !error;
+    }
+    const rpc = novoStatus === 'cancelado' ? 'cancelar_pedido_convidado' : 'marcar_comprovante_convidado';
+    const { data, error } = await supabase.rpc(rpc, { p_numero_pedido: pedido.numero_pedido });
+    return !error && data === true;
+  };
+
   // Verificação client-side: se ninguém rodou o job automático, cancela ao abrir/atualizar esta tela
   useEffect(() => {
     if (pedido?.status === 'aguardando_pagamento' && expirado && !jaExpirouRef.current) {
       jaExpirouRef.current = true;
-      supabase.from('pedidos').update({ status: 'cancelado' }).eq('id', pedido.id).eq('status', 'aguardando_pagamento')
-        .then(() => setPedido((prev) => (prev ? { ...prev, status: 'cancelado' } : prev)));
+      atualizarStatusPagamento('cancelado').then((ok) => {
+        if (ok) setPedido((prev) => (prev ? { ...prev, status: 'cancelado' } : prev));
+      });
     }
-  }, [expirado, pedido]);
+  }, [expirado, pedido]); // eslint-disable-line
 
   const handleEnviarComprovante = async () => {
     setEnviando(true);
     const valor = Number(pedido.total);
-    const { error } = await supabase
-      .from('pedidos')
-      .update({ status: 'aguardando_confirmacao_pagamento', comprovante_enviado: true })
-      .eq('id', pedido.id)
-      .eq('status', 'aguardando_pagamento');
-    if (!error) {
+    const ok = await atualizarStatusPagamento('aguardando_confirmacao_pagamento', { comprovante_enviado: true });
+    if (ok) {
       setPedido((prev) => ({ ...prev, status: 'aguardando_confirmacao_pagamento', comprovante_enviado: true }));
     }
     setEnviando(false);
@@ -104,12 +119,8 @@ export default function AguardandoPagamentoPage() {
   const handleCancelar = async () => {
     if (!window.confirm('Cancelar este pedido?')) return;
     setCancelando(true);
-    const { error } = await supabase
-      .from('pedidos')
-      .update({ status: 'cancelado' })
-      .eq('id', pedido.id)
-      .eq('status', 'aguardando_pagamento');
-    if (!error) setPedido((prev) => ({ ...prev, status: 'cancelado' }));
+    const ok = await atualizarStatusPagamento('cancelado');
+    if (ok) setPedido((prev) => ({ ...prev, status: 'cancelado' }));
     setCancelando(false);
   };
 

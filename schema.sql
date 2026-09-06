@@ -325,6 +325,43 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.obter_pedido_convidado(text) TO anon, authenticated;
 
+-- Convidado marca que enviou o comprovante do Pix (mesmo raciocínio de
+-- obter_pedido_convidado: só age em cima do número exato do próprio pedido,
+-- nunca em todos os pedidos de convidado aguardando pagamento de uma vez).
+CREATE OR REPLACE FUNCTION public.marcar_comprovante_convidado(p_numero_pedido text)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  UPDATE public.pedidos
+  SET status = 'aguardando_confirmacao_pagamento', comprovante_enviado = true
+  WHERE numero_pedido = p_numero_pedido AND usuario_id IS NULL AND status = 'aguardando_pagamento';
+  RETURN FOUND;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.marcar_comprovante_convidado(text) TO anon, authenticated;
+
+-- Convidado cancela o próprio pedido (ou o front cancela sozinho quando o
+-- prazo do Pix expira) — mesma restrição: só pelo número exato do pedido.
+CREATE OR REPLACE FUNCTION public.cancelar_pedido_convidado(p_numero_pedido text)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  UPDATE public.pedidos
+  SET status = 'cancelado'
+  WHERE numero_pedido = p_numero_pedido AND usuario_id IS NULL AND status = 'aguardando_pagamento';
+  RETURN FOUND;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.cancelar_pedido_convidado(text) TO anon, authenticated;
+
 -- Cria um pedido de CONVIDADO (usuario_id sempre NULL aqui). Necessário porque
 -- o Postgres, ao fazer INSERT ... RETURNING, exige que a linha inserida
 -- também passe pela policy de SELECT — e como convidado não tem mais policy
@@ -422,11 +459,18 @@ CREATE POLICY "pedidos_select_own"   ON public.pedidos FOR SELECT USING (auth.ui
 CREATE POLICY "pedidos_insert_own"   ON public.pedidos FOR INSERT WITH CHECK (auth.uid() = usuario_id OR usuario_id IS NULL);
 CREATE POLICY "pedidos_update_admin" ON public.pedidos FOR UPDATE USING (public.eh_admin());
 
--- cliente (logado ou convidado) pode, só enquanto o pedido está aguardando
--- pagamento, marcar que enviou o comprovante ou cancelar — nada além disso
+-- cliente LOGADO pode, só enquanto o pedido está aguardando pagamento,
+-- marcar que enviou o comprovante ou cancelar — nada além disso.
+-- Convidado (usuario_id IS NULL) NÃO entra aqui: um "OR usuario_id IS NULL"
+-- nessa policy liberaria QUALQUER pessoa (sem login, sem saber nenhum número
+-- de pedido) cancelar ou fingir comprovante enviado em TODOS os pedidos de
+-- convidado aguardando pagamento de uma vez, via REST direto. Convidado usa
+-- as funções marcar_comprovante_convidado/cancelar_pedido_convidado abaixo,
+-- que exigem o número exato do próprio pedido — mesmo padrão já usado em
+-- obter_pedido_convidado.
 CREATE POLICY "pedidos_update_pagamento_cliente" ON public.pedidos
   FOR UPDATE
-  USING (status = 'aguardando_pagamento' AND (auth.uid() = usuario_id OR usuario_id IS NULL))
+  USING (status = 'aguardando_pagamento' AND auth.uid() = usuario_id)
   WITH CHECK (status IN ('aguardando_confirmacao_pagamento', 'cancelado'));
 
 -- itens_pedido: segue o pedido pai (convidado acessa via obter_pedido_convidado, não direto)
@@ -756,3 +800,49 @@ ON CONFLICT (codigo) DO NOTHING;
 -- ============================================================
 -- ALTER TABLE public.configuracoes ADD COLUMN IF NOT EXISTS emailjs_template_id_pagamento text;
 -- ALTER TABLE public.pedidos ADD COLUMN IF NOT EXISTS notificacao_pagamento_whatsapp_enviada_em timestamptz;
+
+-- ============================================================
+-- MIGRAÇÃO (projetos já existentes): fecha o vazamento em
+-- "pedidos_update_pagamento_cliente" — a policy antiga liberava
+-- "usuario_id IS NULL" pra QUALQUER pessoa (sem login, sem saber
+-- nenhum número de pedido) cancelar ou marcar comprovante_enviado
+-- em TODOS os pedidos de convidado aguardando pagamento de uma vez
+-- só, via REST direto. Convidado passa a usar as funções abaixo,
+-- que só agem em cima do número exato do próprio pedido — mesmo
+-- padrão já usado em obter_pedido_convidado. Roda isto no SQL Editor:
+-- ============================================================
+-- CREATE OR REPLACE FUNCTION public.marcar_comprovante_convidado(p_numero_pedido text)
+-- RETURNS boolean
+-- LANGUAGE plpgsql
+-- SECURITY DEFINER
+-- SET search_path = public
+-- AS $$
+-- BEGIN
+--   UPDATE public.pedidos
+--   SET status = 'aguardando_confirmacao_pagamento', comprovante_enviado = true
+--   WHERE numero_pedido = p_numero_pedido AND usuario_id IS NULL AND status = 'aguardando_pagamento';
+--   RETURN FOUND;
+-- END;
+-- $$;
+-- GRANT EXECUTE ON FUNCTION public.marcar_comprovante_convidado(text) TO anon, authenticated;
+--
+-- CREATE OR REPLACE FUNCTION public.cancelar_pedido_convidado(p_numero_pedido text)
+-- RETURNS boolean
+-- LANGUAGE plpgsql
+-- SECURITY DEFINER
+-- SET search_path = public
+-- AS $$
+-- BEGIN
+--   UPDATE public.pedidos
+--   SET status = 'cancelado'
+--   WHERE numero_pedido = p_numero_pedido AND usuario_id IS NULL AND status = 'aguardando_pagamento';
+--   RETURN FOUND;
+-- END;
+-- $$;
+-- GRANT EXECUTE ON FUNCTION public.cancelar_pedido_convidado(text) TO anon, authenticated;
+--
+-- DROP POLICY IF EXISTS "pedidos_update_pagamento_cliente" ON public.pedidos;
+-- CREATE POLICY "pedidos_update_pagamento_cliente" ON public.pedidos
+--   FOR UPDATE
+--   USING (status = 'aguardando_pagamento' AND auth.uid() = usuario_id)
+--   WITH CHECK (status IN ('aguardando_confirmacao_pagamento', 'cancelado'));
