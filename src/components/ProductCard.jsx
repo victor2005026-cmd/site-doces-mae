@@ -1,11 +1,11 @@
-import { formatPrice, pesoLabel } from '../data/products';
+import { formatPrice } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
+import PesoBadge from './PesoBadge';
 
 export default function ProductCard({ product, onOpenDetail }) {
   const { addItem } = useCart();
   const { showToast } = useToast();
-  const peso = pesoLabel(product);
 
   const handleAdd = (e) => {
     e.stopPropagation();
@@ -35,11 +35,7 @@ export default function ProductCard({ product, onOpenDetail }) {
       <div className="flex flex-1 flex-col p-3 sm:p-4">
         <h3 className="font-heading text-[0.95rem] font-semibold text-text-primary sm:text-[1.05rem]">{product.name}</h3>
         <p className="mt-1 line-clamp-1 text-[0.8rem] text-text-secondary sm:text-[0.85rem]">{product.description}</p>
-        {peso && (
-          <span className="mt-1 inline-block w-fit whitespace-nowrap rounded-full bg-gold/15 px-2.5 py-1 text-[0.72rem] font-bold text-gold-dark">
-            {peso}
-          </span>
-        )}
+        <PesoBadge product={product} className="mt-1" />
 
         <div className="mt-3 flex items-center justify-between">
           <span className="text-[0.95rem] font-bold text-text-primary sm:text-[1.05rem]">{formatPrice(product.price)}</span>

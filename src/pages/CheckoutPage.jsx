@@ -838,6 +838,12 @@ export default function CheckoutPage() {
   // camposExtras decide o que muda entre o fluxo Pix e o fluxo WhatsApp
   // (status, origem, expiração, observações).
   const criarPedido = async (camposExtras) => {
+    const pedidoMinimo = Number(config?.pedido_minimo ?? 0);
+    if (pedidoMinimo > 0 && subtotal < pedidoMinimo) {
+      alert(`Pedido mínimo de ${formatPrice(pedidoMinimo)}. Volte à sacola e adicione mais itens.`);
+      return null;
+    }
+
     const telefoneCliente = user ? perfil?.telefone : guest?.telefone;
 
     // revalida o cupom com o telefone real (só conhecido a partir daqui) antes de cobrar

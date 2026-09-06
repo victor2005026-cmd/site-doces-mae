@@ -82,6 +82,7 @@ export default function AdminSettingsTab() {
     const { data: configuracaoSalva, error: saveError } = await supabase.from('configuracoes').update({
       antecedencia_minima_horas: cfg.antecedencia_minima_horas,
       taxa_entrega_padrao: cfg.taxa_entrega_padrao,
+      pedido_minimo: cfg.pedido_minimo,
       endereco_retirada: cfg.endereco_retirada,
       horario_funcionamento: cfg.horario_funcionamento,
       horario_retirada: cfg.horario_retirada,
@@ -209,9 +210,14 @@ export default function AdminSettingsTab() {
               <label className={lbl}>Taxa de entrega padrão (R$)</label>
               <input type="number" step="0.5" min="0" value={cfg.taxa_entrega_padrao} onChange={setField('taxa_entrega_padrao')} className={ic} />
             </div>
+            <div>
+              <label className={lbl}>Pedido mínimo (R$)</label>
+              <input type="number" step="0.5" min="0" value={cfg.pedido_minimo} onChange={setField('pedido_minimo')} className={ic} />
+            </div>
           </div>
           <p className="mt-2 text-[0.78rem] text-text-secondary">
             A taxa padrão só é usada como reserva — bairros cadastrados na aba "Taxas de entrega" têm prioridade.
+            Deixe o pedido mínimo em 0 pra não exigir valor mínimo nenhum.
           </p>
         </div>
 

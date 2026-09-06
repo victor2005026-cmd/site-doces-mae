@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { formatPrice } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useAdminProducts } from '../context/AdminProductsContext';
 import { useToast } from '../context/ToastContext';
 import { encontrarPromocaoDoProduto } from '../lib/promocoes';
 
@@ -66,11 +67,14 @@ export default function CartPanel() {
     promocoesBundle, economiaPromocoes,
   } = useCart();
   const { perfil } = useAuth();
+  const { config } = useAdminProducts();
   const { showToast } = useToast();
   const [showDelivery, setShowDelivery] = useState(false);
   const [couponInput, setCouponInput] = useState('');
 
   const total = subtotal - (coupon?.desconto ?? 0);
+  const pedidoMinimo = Number(config?.pedido_minimo ?? 0);
+  const faltaPedidoMinimo = pedidoMinimo > 0 && subtotal < pedidoMinimo;
 
   useEffect(() => {
     if (coupon) showToast(`Cupom ${coupon.codigo} aplicado com sucesso!`, 'success');
@@ -202,24 +206,45 @@ export default function CartPanel() {
           </span>
         ) : (
           <div className="flex flex-col gap-2">
-            <Link
-              to="/checkout"
-              className="flex w-full items-center justify-center rounded-full bg-rose px-6 py-3 text-[0.95rem] font-semibold text-white transition-colors hover:bg-rose-dark"
-            >
-              Fazer pedido
-            </Link>
-            <a
-              href={checkoutLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex w-full items-center justify-center gap-1.5 rounded-full border border-success/40 px-6 py-2.5 text-[0.85rem] font-medium text-success transition-colors hover:border-success"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M17.5 14.4c-.3-.1-1.7-.8-2-.9-.3-.1-.4-.1-.6.1-.2.3-.6 1-.8 1.2-.1.2-.3.2-.5.1-1.3-.6-2.2-1.1-3.1-2.6-.2-.4.2-.4.6-1.2.1-.2 0-.3 0-.5-.1-.1-.5-1.3-.7-1.7-.2-.4-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.1 0 1.3 1 2.5 1.1 2.7.1.2 1.8 2.8 4.4 3.8 2.2.9 2.6.7 3.1.6.5 0 1.6-.6 1.8-1.3.2-.6.2-1.2.1-1.3-.1-.1-.3-.1-.6-.2z" />
-                <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l4.9-1.3A10 10 0 1 0 12 2z" fillRule="evenodd" />
-              </svg>
-              Enviar pelo WhatsApp
-            </a>
+            {faltaPedidoMinimo && (
+              <p className="mb-1 text-center text-[0.82rem] font-medium text-rose-dark">
+                Pedido mínimo de {formatPrice(pedidoMinimo)} — faltam {formatPrice(pedidoMinimo - subtotal)} pra continuar.
+              </p>
+            )}
+            {faltaPedidoMinimo ? (
+              <span className="flex w-full items-center justify-center rounded-full bg-bg-alt px-6 py-3 text-[0.95rem] font-semibold text-text-secondary">
+                Fazer pedido
+              </span>
+            ) : (
+              <Link
+                to="/checkout"
+                className="flex w-full items-center justify-center rounded-full bg-rose px-6 py-3 text-[0.95rem] font-semibold text-white transition-colors hover:bg-rose-dark"
+              >
+                Fazer pedido
+              </Link>
+            )}
+            {faltaPedidoMinimo ? (
+              <span className="flex w-full items-center justify-center gap-1.5 rounded-full border border-border-light px-6 py-2.5 text-[0.85rem] font-medium text-text-secondary">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.5 14.4c-.3-.1-1.7-.8-2-.9-.3-.1-.4-.1-.6.1-.2.3-.6 1-.8 1.2-.1.2-.3.2-.5.1-1.3-.6-2.2-1.1-3.1-2.6-.2-.4.2-.4.6-1.2.1-.2 0-.3 0-.5-.1-.1-.5-1.3-.7-1.7-.2-.4-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.1 0 1.3 1 2.5 1.1 2.7.1.2 1.8 2.8 4.4 3.8 2.2.9 2.6.7 3.1.6.5 0 1.6-.6 1.8-1.3.2-.6.2-1.2.1-1.3-.1-.1-.3-.1-.6-.2z" />
+                  <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l4.9-1.3A10 10 0 1 0 12 2z" fillRule="evenodd" />
+                </svg>
+                Enviar pelo WhatsApp
+              </span>
+            ) : (
+              <a
+                href={checkoutLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex w-full items-center justify-center gap-1.5 rounded-full border border-success/40 px-6 py-2.5 text-[0.85rem] font-medium text-success transition-colors hover:border-success"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M17.5 14.4c-.3-.1-1.7-.8-2-.9-.3-.1-.4-.1-.6.1-.2.3-.6 1-.8 1.2-.1.2-.3.2-.5.1-1.3-.6-2.2-1.1-3.1-2.6-.2-.4.2-.4.6-1.2.1-.2 0-.3 0-.5-.1-.1-.5-1.3-.7-1.7-.2-.4-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3-.2.3-.9.9-.9 2.1 0 1.3 1 2.5 1.1 2.7.1.2 1.8 2.8 4.4 3.8 2.2.9 2.6.7 3.1.6.5 0 1.6-.6 1.8-1.3.2-.6.2-1.2.1-1.3-.1-.1-.3-.1-.6-.2z" />
+                  <path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l4.9-1.3A10 10 0 1 0 12 2z" fillRule="evenodd" />
+                </svg>
+                Enviar pelo WhatsApp
+              </a>
+            )}
           </div>
         )}
       </div>

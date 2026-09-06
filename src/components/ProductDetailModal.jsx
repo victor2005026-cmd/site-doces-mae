@@ -1,15 +1,14 @@
-import { formatPrice, pesoLabel } from '../data/products';
+import { formatPrice } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import { waLink } from '../lib/whatsapp';
+import PesoBadge from './PesoBadge';
 
 export default function ProductDetailModal({ product, onClose }) {
   const { addItem } = useCart();
   const { showToast } = useToast();
 
   if (!product) return null;
-
-  const peso = pesoLabel(product, { completo: true });
 
   const handleAdd = () => {
     addItem(product);
@@ -48,11 +47,7 @@ export default function ProductDetailModal({ product, onClose }) {
           <div>
             <h2 className="font-heading text-[1.2rem] font-semibold text-text-primary">{product.name}</h2>
             <p className="mt-1 text-[0.92rem] text-text-secondary">{product.description}</p>
-            {peso && (
-              <span className="mt-2 inline-block w-fit rounded-full bg-gold/15 px-3 py-1 text-[0.8rem] font-bold text-gold-dark">
-                {peso}
-              </span>
-            )}
+            <PesoBadge product={product} completo className="mt-2" />
           </div>
 
           <p className="text-[1.3rem] font-bold text-rose">{formatPrice(product.price)}</p>

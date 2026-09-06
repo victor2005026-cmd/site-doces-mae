@@ -120,25 +120,3 @@ export const PRODUCTS = [
 export function formatPrice(value) {
   return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
-
-// Texto de "quantas unidades vêm" / peso por unidade / peso total, pro selo
-// de destaque no card e no modal de detalhe. null quando o produto não tem
-// nem unidades nem gramas cadastradas (campos opcionais no admin).
-//
-// `completo: true` (modal, mais espaço) soletra "unidades" e inclui o peso
-// total entre parênteses. A versão compacta (card, grid de 2 colunas no
-// celular) abrevia pra "un." e omite o total — com o total, o texto quebra
-// em 2 linhas só nos produtos com mais dígitos e desequilibra a altura dos
-// cards na mesma fileira.
-export function pesoLabel(product, { completo = false } = {}) {
-  const { units, grams } = product;
-  if (!(units > 1) && !(grams > 0)) return null;
-
-  const partes = [];
-  if (units > 1) partes.push(`${units}${completo ? ' unidades' : ' un.'}`);
-  if (grams > 0) partes.push(`${grams}g ${units > 1 ? 'cada' : 'por unidade'}`);
-
-  let texto = partes.join(' · ');
-  if (completo && units > 1 && grams > 0) texto += ` (${units * grams}g no total)`;
-  return texto;
-}
