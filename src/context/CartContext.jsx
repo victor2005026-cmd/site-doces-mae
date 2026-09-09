@@ -38,33 +38,39 @@ export function CartProvider({ children }) {
     return () => supabase.removeChannel(channel);
   }, []);
 
+  // cartItemId identifica a linha do carrinho: produtos normais usam o
+  // próprio id do produto (soma quantidade ao repetir), mas uma caixa
+  // customizada (com sabores escolhidos) recebe um cartItemId próprio na
+  // hora de adicionar — duas caixas do mesmo produto podem ter misturas de
+  // sabor diferentes, então não podem virar uma linha só automaticamente.
   const addItem = (product) => {
+    const cartItemId = product.cartItemId ?? product.id;
     setItems((prev) => {
-      const existing = prev.find((item) => item.id === product.id);
+      const existing = prev.find((item) => item.cartItemId === cartItemId);
       if (existing) {
         return prev.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
+          item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item
         );
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return [...prev, { ...product, cartItemId, quantity: 1 }];
     });
     setIsOpen(true);
   };
 
-  const incrementItem = (id) => {
-    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, quantity: item.quantity + 1 } : item)));
+  const incrementItem = (cartItemId) => {
+    setItems((prev) => prev.map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity + 1 } : item)));
   };
 
-  const decrementItem = (id) => {
+  const decrementItem = (cartItemId) => {
     setItems((prev) =>
       prev
-        .map((item) => (item.id === id ? { ...item, quantity: item.quantity - 1 } : item))
+        .map((item) => (item.cartItemId === cartItemId ? { ...item, quantity: item.quantity - 1 } : item))
         .filter((item) => item.quantity > 0)
     );
   };
 
-  const removeItem = (id) => {
-    setItems((prev) => prev.filter((item) => item.id !== id));
+  const removeItem = (cartItemId) => {
+    setItems((prev) => prev.filter((item) => item.cartItemId !== cartItemId));
   };
 
   const clearCart = () => {
@@ -119,9 +125,11 @@ export function CartProvider({ children }) {
 
   const checkoutMessage = useMemo(() => {
     if (items.length === 0) return '';
-    const lines = items.map(
-      (item) => `• ${item.quantity}x ${item.name} — ${formatPrice(item.quantity * item.price)}`
-    );
+    const lines = items.flatMap((item) => {
+      const linha = `• ${item.quantity}x ${item.name} — ${formatPrice(item.quantity * item.price)}`;
+      if (!item.sabores?.length) return [linha];
+      return [linha, ...item.sabores.map((s) => `   - ${s.quantidade}x ${s.nome}`)];
+    });
     return [
       'Olá! Gostaria de fazer o seguinte pedido:',
       '',

@@ -894,6 +894,7 @@ export default function CheckoutPage() {
         nome_produto: item.name,
         quantidade: item.quantity,
         preco_unitario: item.price,
+        sabores: item.sabores ?? null,
       }));
       await supabase.from('itens_pedido').insert(itensPayload);
     } else {
@@ -904,6 +905,7 @@ export default function CheckoutPage() {
         nome_produto: item.name,
         quantidade: item.quantity,
         preco_unitario: item.price,
+        sabores: item.sabores ?? null,
       }));
       const { data, error } = await supabase.rpc('criar_pedido_convidado', {
         p_pedido: pedidoPayload,
@@ -950,7 +952,13 @@ export default function CheckoutPage() {
     try {
       const pedido = await criarPedido({ status: 'recebido', origem: 'whatsapp', observacoes: null });
       if (pedido) {
-        const itensTexto = items.map((i) => `• ${i.quantity}× ${i.name}`).join('\n');
+        const itensTexto = items
+          .flatMap((i) => {
+            const linha = `• ${i.quantity}× ${i.name}`;
+            if (!i.sabores?.length) return [linha];
+            return [linha, ...i.sabores.map((s) => `   - ${s.quantidade}x ${s.nome}`)];
+          })
+          .join('\n');
         const enderecoTexto = entrega.tipo === 'entrega'
           ? `Entrega: ${entrega.endereco.rua}, ${entrega.endereco.numero} – ${entrega.endereco.bairro}, ${entrega.endereco.cidade}`
           : 'Retirada no local';

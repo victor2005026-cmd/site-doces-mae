@@ -101,9 +101,16 @@ export default function OrderConfirmationPage() {
           <h2 className="mb-3 font-heading text-[1rem] font-semibold text-text-primary">Itens</h2>
           <ul className="flex flex-col gap-2">
             {itens.map((item) => (
-              <li key={item.id} className="flex justify-between text-[0.9rem]">
-                <span className="text-text-primary">{item.quantidade}× {item.nome_produto}</span>
-                <span className="font-medium">{formatPrice(item.preco_unitario * item.quantidade)}</span>
+              <li key={item.id} className="text-[0.9rem]">
+                <div className="flex justify-between">
+                  <span className="text-text-primary">{item.quantidade}× {item.nome_produto}</span>
+                  <span className="font-medium">{formatPrice(item.preco_unitario * item.quantidade)}</span>
+                </div>
+                {item.sabores?.length > 0 && (
+                  <p className="pl-3 text-[0.8rem] text-text-secondary">
+                    {item.sabores.map((s) => `${s.quantidade}× ${s.nome}`).join(', ')}
+                  </p>
+                )}
               </li>
             ))}
           </ul>

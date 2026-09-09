@@ -41,7 +41,13 @@ const ORIGEM_COLORS = { site: 'bg-rose/20 text-rose-dark', whatsapp: 'bg-success
 const PERIODO_LABELS = { manha: 'Manhã', tarde: 'Tarde', noite: 'Noite' };
 
 function gerarTextoWA(pedido, itens) {
-  const linhas = itens.map((i) => `• ${i.quantidade}× ${i.nome_produto}`).join('\n');
+  const linhas = itens
+    .flatMap((i) => {
+      const linha = `• ${i.quantidade}× ${i.nome_produto}`;
+      if (!i.sabores?.length) return [linha];
+      return [linha, ...i.sabores.map((s) => `   - ${s.quantidade}x ${s.nome}`)];
+    })
+    .join('\n');
   return `Olá ${pedido.dados_convidado?.nome ?? 'cliente'}! Seu pedido ${pedido.numero_pedido} foi ${STATUS_FLOW[pedido.status]?.label?.toLowerCase() ?? pedido.status}. 🍫\n\nItens:\n${linhas}\nTotal: ${formatPrice(pedido.total)}`;
 }
 
@@ -393,6 +399,11 @@ export default function AdminOrdersTab() {
                   {(pedido.itens_pedido ?? []).map((item) => (
                     <li key={item.id} className="text-[0.82rem] text-text-secondary">
                       {item.quantidade}× {item.nome_produto}
+                      {item.sabores?.length > 0 && (
+                        <span className="block pl-3 text-[0.78rem]">
+                          {item.sabores.map((s) => `${s.quantidade}× ${s.nome}`).join(', ')}
+                        </span>
+                      )}
                     </li>
                   ))}
                 </ul>

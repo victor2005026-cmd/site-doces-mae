@@ -105,7 +105,10 @@ CREATE TABLE IF NOT EXISTS public.itens_pedido (
   produto_id      uuid    REFERENCES public.produtos,  -- nullable: produto pode ser deletado
   nome_produto    text    NOT NULL,    -- snapshot do nome na hora do pedido
   quantidade      int     NOT NULL,
-  preco_unitario  numeric NOT NULL
+  preco_unitario  numeric NOT NULL,
+  sabores         jsonb   -- mistura de sabores escolhida (Caixas customizáveis),
+                           -- formato [{"nome": "Meio Amargo", "quantidade": 5}, ...];
+                           -- null quando o item não é uma caixa customizada
 );
 
 CREATE TABLE IF NOT EXISTS public.configuracoes (
@@ -404,12 +407,13 @@ BEGIN
 
   FOR v_item IN SELECT * FROM jsonb_array_elements(COALESCE(p_itens, '[]'::jsonb))
   LOOP
-    INSERT INTO public.itens_pedido (pedido_id, nome_produto, quantidade, preco_unitario)
+    INSERT INTO public.itens_pedido (pedido_id, nome_produto, quantidade, preco_unitario, sabores)
     VALUES (
       v_pedido.id,
       v_item->>'nome_produto',
       (v_item->>'quantidade')::int,
-      (v_item->>'preco_unitario')::numeric
+      (v_item->>'preco_unitario')::numeric,
+      v_item->'sabores'
     );
   END LOOP;
 
@@ -846,3 +850,62 @@ ON CONFLICT (codigo) DO NOTHING;
 --   FOR UPDATE
 --   USING (status = 'aguardando_pagamento' AND auth.uid() = usuario_id)
 --   WITH CHECK (status IN ('aguardando_confirmacao_pagamento', 'cancelado'));
+
+-- ============================================================
+-- MIGRAÇÃO (projetos já existentes): escolha de sabores dentro
+-- de uma Caixa (ex: caixa de 12 com 5 Meio Amargo, 1 Moranguinho,
+-- 6 Choconinho). Guarda a mistura escolhida em cada item do
+-- pedido. IMPORTANTE: rode isto ANTES de publicar o código que
+-- usa essa coluna — o insert de itens de pedido de cliente
+-- logado manda o campo "sabores" sempre (null quando não é
+-- caixa customizada), e trava até essa coluna existir.
+-- ============================================================
+-- ALTER TABLE public.itens_pedido ADD COLUMN IF NOT EXISTS sabores jsonb;
+--
+-- CREATE OR REPLACE FUNCTION public.criar_pedido_convidado(p_pedido jsonb, p_itens jsonb)
+-- RETURNS jsonb
+-- LANGUAGE plpgsql
+-- SECURITY DEFINER
+-- SET search_path = public
+-- AS $$
+-- DECLARE
+--   v_pedido public.pedidos%ROWTYPE;
+--   v_item jsonb;
+-- BEGIN
+--   INSERT INTO public.pedidos (
+--     dados_convidado, origem, status, data_expiracao_pagamento, tipo_entrega,
+--     endereco_entrega, data_agendada, periodo_agendado, forma_pagamento,
+--     observacoes, subtotal, taxa_entrega, cupom_id, desconto_aplicado, total
+--   ) VALUES (
+--     p_pedido->'dados_convidado',
+--     COALESCE(p_pedido->>'origem', 'site'),
+--     COALESCE(p_pedido->>'status', 'aguardando_pagamento'),
+--     (p_pedido->>'data_expiracao_pagamento')::timestamptz,
+--     p_pedido->>'tipo_entrega',
+--     p_pedido->'endereco_entrega',
+--     (p_pedido->>'data_agendada')::date,
+--     p_pedido->>'periodo_agendado',
+--     p_pedido->>'forma_pagamento',
+--     p_pedido->>'observacoes',
+--     (p_pedido->>'subtotal')::numeric,
+--     (p_pedido->>'taxa_entrega')::numeric,
+--     CASE WHEN p_pedido->>'cupom_id' IS NULL THEN NULL ELSE (p_pedido->>'cupom_id')::uuid END,
+--     COALESCE((p_pedido->>'desconto_aplicado')::numeric, 0),
+--     (p_pedido->>'total')::numeric
+--   )
+--   RETURNING * INTO v_pedido;
+--   FOR v_item IN SELECT * FROM jsonb_array_elements(COALESCE(p_itens, '[]'::jsonb))
+--   LOOP
+--     INSERT INTO public.itens_pedido (pedido_id, nome_produto, quantidade, preco_unitario, sabores)
+--     VALUES (
+--       v_pedido.id,
+--       v_item->>'nome_produto',
+--       (v_item->>'quantidade')::int,
+--       (v_item->>'preco_unitario')::numeric,
+--       v_item->'sabores'
+--     );
+--   END LOOP;
+--   RETURN to_jsonb(v_pedido);
+-- END;
+-- $$;
+-- GRANT EXECUTE ON FUNCTION public.criar_pedido_convidado(jsonb, jsonb) TO anon, authenticated;

@@ -7,8 +7,16 @@ export default function ProductCard({ product, onOpenDetail }) {
   const { addItem } = useCart();
   const { showToast } = useToast();
 
+  // Caixa com sabor pra escolher não dá pra "adicionar rápido" sem montar
+  // a mistura — abre o modal de detalhe em vez de jogar direto no carrinho.
+  const isCaixaCustomizavel = product.category === 'caixas' && Number(product.units) > 0;
+
   const handleAdd = (e) => {
     e.stopPropagation();
+    if (isCaixaCustomizavel) {
+      onOpenDetail?.(product);
+      return;
+    }
     addItem(product);
     showToast(`${product.name} adicionado à sacola!`, 'success');
   };
@@ -42,7 +50,7 @@ export default function ProductCard({ product, onOpenDetail }) {
           <button
             type="button"
             onClick={handleAdd}
-            aria-label={`Adicionar ${product.name} ao carrinho`}
+            aria-label={isCaixaCustomizavel ? `Escolher sabores de ${product.name}` : `Adicionar ${product.name} ao carrinho`}
             className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full bg-rose text-white shadow-sm transition-transform hover:scale-110 hover:bg-rose-dark sm:h-9 sm:w-9"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

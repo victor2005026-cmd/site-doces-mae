@@ -17,6 +17,11 @@ function CartItemRow({ item, promocoesBundle, onIncrement, onDecrement, onRemove
       <div className="flex-1">
         <p className="text-[0.95rem] font-medium text-text-primary">{item.name}</p>
         <p className="text-[0.85rem] text-text-secondary">{formatPrice(item.price)}</p>
+        {item.sabores?.length > 0 && (
+          <p className="mt-0.5 text-[0.78rem] text-text-secondary">
+            {item.sabores.map((s) => `${s.quantidade}× ${s.nome}`).join(', ')}
+          </p>
+        )}
         {promoAtiva ? (
           <p className="mt-0.5 text-[0.78rem] font-semibold text-success">
             Promoção aplicada: leve {promo.quantidade} por {formatPrice(promo.preco_promocional)}
@@ -87,7 +92,7 @@ export default function CartPanel() {
   };
 
   const handleRemove = (item) => {
-    removeItem(item.id);
+    removeItem(item.cartItemId);
     showToast(`${item.name} removido da sacola.`, 'info');
   };
 
@@ -128,11 +133,11 @@ export default function CartPanel() {
           <ul className="flex flex-col gap-4">
             {items.map((item) => (
               <CartItemRow
-                key={item.id}
+                key={item.cartItemId}
                 item={item}
                 promocoesBundle={promocoesBundle}
-                onIncrement={() => incrementItem(item.id)}
-                onDecrement={() => decrementItem(item.id)}
+                onIncrement={() => incrementItem(item.cartItemId)}
+                onDecrement={() => decrementItem(item.cartItemId)}
                 onRemove={() => handleRemove(item)}
               />
             ))}

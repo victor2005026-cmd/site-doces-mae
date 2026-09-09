@@ -1,17 +1,51 @@
+import { useEffect, useState } from 'react';
 import { formatPrice } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
+import { useAdminProducts } from '../context/AdminProductsContext';
 import { waLink } from '../lib/whatsapp';
 import PesoBadge from './PesoBadge';
+import BoxFlavorPicker from './BoxFlavorPicker';
 
 export default function ProductDetailModal({ product, onClose }) {
   const { addItem } = useCart();
   const { showToast } = useToast();
+  const { activeProducts } = useAdminProducts();
+  const [quantidades, setQuantidades] = useState({});
+
+  // Zera a escolha de sabores sempre que o produto aberto muda — o modal
+  // continua montado entre uma abertura e outra, só troca o `product`.
+  useEffect(() => {
+    setQuantidades({});
+  }, [product?.id]);
 
   if (!product) return null;
 
+  const capacity = Number(product.units) || 0;
+  const isCaixaCustomizavel = product.category === 'caixas' && capacity > 0;
+  const totalEscolhido = Object.values(quantidades).reduce((soma, qtd) => soma + qtd, 0);
+  const podeAdicionar = !isCaixaCustomizavel || totalEscolhido === capacity;
+
+  const handleChangeQuantidade = (produtoId, novaQtd) => {
+    setQuantidades((prev) => {
+      const proximo = { ...prev, [produtoId]: Math.max(0, novaQtd) };
+      if (proximo[produtoId] === 0) delete proximo[produtoId];
+      return proximo;
+    });
+  };
+
+  const montarSabores = () => {
+    if (!isCaixaCustomizavel) return undefined;
+    const sabores = activeProducts.filter((p) => p.category === 'gourmet');
+    return sabores
+      .filter((s) => quantidades[s.id] > 0)
+      .map((s) => ({ nome: s.name, quantidade: quantidades[s.id] }));
+  };
+
   const handleAdd = () => {
-    addItem(product);
+    if (!podeAdicionar) return;
+    const sabores = montarSabores();
+    addItem(sabores ? { ...product, cartItemId: crypto.randomUUID(), sabores } : product);
     showToast(`${product.name} adicionado à sacola!`, 'success');
     onClose();
   };
@@ -52,13 +86,24 @@ export default function ProductDetailModal({ product, onClose }) {
 
           <p className="text-[1.3rem] font-bold text-rose">{formatPrice(product.price)}</p>
 
+          {isCaixaCustomizavel && (
+            <BoxFlavorPicker
+              capacity={capacity}
+              quantidades={quantidades}
+              onChangeQuantidade={handleChangeQuantidade}
+            />
+          )}
+
           <div className="mt-1 flex flex-col gap-2.5">
             <button
               type="button"
               onClick={handleAdd}
-              className="rounded-full bg-rose py-3 text-[0.95rem] font-semibold text-white transition-colors hover:bg-rose-dark"
+              disabled={!podeAdicionar}
+              className="rounded-full bg-rose py-3 text-[0.95rem] font-semibold text-white transition-colors hover:bg-rose-dark disabled:opacity-50"
             >
-              Adicionar ao carrinho
+              {isCaixaCustomizavel && !podeAdicionar
+                ? `Escolha mais ${capacity - totalEscolhido} sabor${capacity - totalEscolhido > 1 ? 'es' : ''}`
+                : 'Adicionar ao carrinho'}
             </button>
             <a
               href={linkPedidoDireto}

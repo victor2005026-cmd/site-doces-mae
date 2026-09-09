@@ -12,7 +12,11 @@ export async function notificarPedidoNovoPorEmail(config, pedido, itens) {
   }
 
   const listaItens = (itens ?? [])
-    .map((i) => `${i.quantidade}x ${i.nome_produto} — ${formatPrice(i.preco_unitario * i.quantidade)}`)
+    .flatMap((i) => {
+      const linha = `${i.quantidade}x ${i.nome_produto} — ${formatPrice(i.preco_unitario * i.quantidade)}`;
+      if (!i.sabores?.length) return [linha];
+      return [linha, ...i.sabores.map((s) => `   - ${s.quantidade}x ${s.nome}`)];
+    })
     .join('\n');
 
   // Link do painel admin sempre a partir do domínio atual (nunca fixo no
