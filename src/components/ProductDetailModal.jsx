@@ -1,23 +1,41 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { formatPrice } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import { useAdminProducts } from '../context/AdminProductsContext';
 import { waLink } from '../lib/whatsapp';
 import PesoBadge from './PesoBadge';
+import ProductImageCarousel from './ProductImageCarousel';
 import BoxFlavorPicker from './BoxFlavorPicker';
 
-export default function ProductDetailModal({ product, onClose }) {
-  const { addItem } = useCart();
+// `editItem` (opcional): quando presente, é uma linha do carrinho já
+// existente cuja mistura de sabores está sendo editada — em vez de
+// adicionar um item novo, salva a nova mistura nessa mesma linha
+// (usado pelo "Editar sabores" no carrinho).
+export default function ProductDetailModal({ product, editItem, onClose }) {
+  const { addItem, updateItemSabores } = useCart();
   const { showToast } = useToast();
   const { activeProducts } = useAdminProducts();
   const [quantidades, setQuantidades] = useState({});
+  const modoEdicao = Boolean(editItem);
 
-  // Zera a escolha de sabores sempre que o produto aberto muda — o modal
-  // continua montado entre uma abertura e outra, só troca o `product`.
+  // Zera (ou pré-preenche, se for edição) a escolha de sabores sempre que
+  // o produto aberto muda — o modal continua montado entre uma abertura e
+  // outra, só troca o `product`/`editItem`.
   useEffect(() => {
-    setQuantidades({});
-  }, [product?.id]);
+    if (!editItem?.sabores?.length) {
+      setQuantidades({});
+      return;
+    }
+    const sabores = activeProducts.filter((p) => p.category === 'gourmet');
+    const iniciais = {};
+    editItem.sabores.forEach((s) => {
+      const sabor = sabores.find((p) => p.name === s.nome);
+      if (sabor) iniciais[sabor.id] = s.quantidade;
+    });
+    setQuantidades(iniciais);
+  }, [product?.id, editItem]); // eslint-disable-line
 
   if (!product) return null;
 
@@ -45,6 +63,12 @@ export default function ProductDetailModal({ product, onClose }) {
   const handleAdd = () => {
     if (!podeAdicionar) return;
     const sabores = montarSabores();
+    if (modoEdicao) {
+      updateItemSabores(editItem.cartItemId, sabores);
+      showToast('Sabores atualizados!', 'success');
+      onClose();
+      return;
+    }
     addItem(sabores ? { ...product, cartItemId: crypto.randomUUID(), sabores } : product);
     showToast(`${product.name} adicionado à sacola!`, 'success');
     onClose();
@@ -54,14 +78,18 @@ export default function ProductDetailModal({ product, onClose }) {
     `Olá! Gostaria de pedir: 1x ${product.name} — ${formatPrice(product.price)}`
   );
 
-  return (
+  // Portal pro <body>: sem isso, quando aberto a partir do "Editar sabores"
+  // (dentro da barra lateral do carrinho, que é "sticky" + tem overflow
+  // escondido), o modal fica preso ali dentro depois que a página rola —
+  // aparece por baixo do cabeçalho/barra de categoria em vez de cobrir tudo.
+  return createPortal(
     <div
       className="fixed inset-0 z-[300] flex items-center justify-center bg-black/40 p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="flex max-h-[90vh] w-full max-w-[420px] flex-col overflow-y-auto overscroll-contain rounded-card bg-bg-main shadow-lg">
         <div className="relative h-64 w-full flex-shrink-0 overflow-hidden bg-bg-alt sm:h-72">
-          <img src={product.image} alt={product.alt} className="absolute inset-0 h-full w-full object-cover" />
+          <ProductImageCarousel images={[product.image, product.image2]} alt={product.alt} />
           {product.badge && (
             <span className="absolute left-3 top-3 rounded-full bg-rose px-3 py-1 text-[0.7rem] font-semibold text-white shadow-sm">
               {product.badge}
@@ -103,19 +131,22 @@ export default function ProductDetailModal({ product, onClose }) {
             >
               {isCaixaCustomizavel && !podeAdicionar
                 ? `Escolha mais ${capacity - totalEscolhido} sabor${capacity - totalEscolhido > 1 ? 'es' : ''}`
-                : 'Adicionar ao carrinho'}
+                : modoEdicao ? 'Salvar alterações' : 'Adicionar ao carrinho'}
             </button>
-            <a
-              href={linkPedidoDireto}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-full border-2 border-success py-3 text-center text-[0.95rem] font-semibold text-success transition-colors hover:bg-success/10"
-            >
-              Pedir esse pelo WhatsApp
-            </a>
+            {!modoEdicao && (
+              <a
+                href={linkPedidoDireto}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-full border-2 border-success py-3 text-center text-[0.95rem] font-semibold text-success transition-colors hover:bg-success/10"
+              >
+                Pedir esse pelo WhatsApp
+              </a>
+            )}
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

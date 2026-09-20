@@ -6,8 +6,9 @@ import { useAuth } from '../context/AuthContext';
 import { useAdminProducts } from '../context/AdminProductsContext';
 import { useToast } from '../context/ToastContext';
 import { encontrarPromocaoDoProduto } from '../lib/promocoes';
+import ProductDetailModal from './ProductDetailModal';
 
-function CartItemRow({ item, promocoesBundle, onIncrement, onDecrement, onRemove }) {
+function CartItemRow({ item, promocoesBundle, onIncrement, onDecrement, onRemove, onEdit }) {
   const promo = encontrarPromocaoDoProduto(item.id, promocoesBundle);
   const promoAtiva = promo && item.quantity >= promo.quantidade;
 
@@ -18,9 +19,18 @@ function CartItemRow({ item, promocoesBundle, onIncrement, onDecrement, onRemove
         <p className="text-[0.95rem] font-medium text-text-primary">{item.name}</p>
         <p className="text-[0.85rem] text-text-secondary">{formatPrice(item.price)}</p>
         {item.sabores?.length > 0 && (
-          <p className="mt-0.5 text-[0.78rem] text-text-secondary">
-            {item.sabores.map((s) => `${s.quantidade}× ${s.nome}`).join(', ')}
-          </p>
+          <>
+            <p className="mt-0.5 text-[0.78rem] text-text-secondary">
+              {item.sabores.map((s) => `${s.quantidade}× ${s.nome}`).join(', ')}
+            </p>
+            <button
+              type="button"
+              onClick={onEdit}
+              className="mt-0.5 text-[0.78rem] font-medium text-rose underline"
+            >
+              Editar sabores
+            </button>
+          </>
         )}
         {promoAtiva ? (
           <p className="mt-0.5 text-[0.78rem] font-semibold text-success">
@@ -76,6 +86,7 @@ export default function CartPanel() {
   const { showToast } = useToast();
   const [showDelivery, setShowDelivery] = useState(false);
   const [couponInput, setCouponInput] = useState('');
+  const [editando, setEditando] = useState(null);
 
   const total = subtotal - (coupon?.desconto ?? 0);
   const pedidoMinimo = Number(config?.pedido_minimo ?? 0);
@@ -139,6 +150,7 @@ export default function CartPanel() {
                 onIncrement={() => incrementItem(item.cartItemId)}
                 onDecrement={() => decrementItem(item.cartItemId)}
                 onRemove={() => handleRemove(item)}
+                onEdit={() => setEditando(item)}
               />
             ))}
           </ul>
@@ -253,6 +265,14 @@ export default function CartPanel() {
           </div>
         )}
       </div>
+
+      {editando && (
+        <ProductDetailModal
+          product={editando}
+          editItem={editando}
+          onClose={() => setEditando(null)}
+        />
+      )}
     </div>
   );
 }

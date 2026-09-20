@@ -73,6 +73,12 @@ export function CartProvider({ children }) {
     setItems((prev) => prev.filter((item) => item.cartItemId !== cartItemId));
   };
 
+  // Substitui a mistura de sabores de uma caixa já no carrinho, sem criar
+  // linha nova nem mudar a quantidade — usado pelo "Editar sabores".
+  const updateItemSabores = (cartItemId, sabores) => {
+    setItems((prev) => prev.map((item) => (item.cartItemId === cartItemId ? { ...item, sabores } : item)));
+  };
+
   const clearCart = () => {
     setItems([]);
     setIsOpen(false);
@@ -149,6 +155,7 @@ export function CartProvider({ children }) {
     incrementItem,
     decrementItem,
     removeItem,
+    updateItemSabores,
     clearCart,
     totalCount,
     subtotal,
