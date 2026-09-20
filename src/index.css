@@ -66,6 +66,29 @@ body {
   }
 }
 
+/* Título animado da seção de eventos: brilho que passa pelas letras + emoji balançando */
+@keyframes evento-shimmer {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+@keyframes evento-wiggle {
+  0%, 100% { transform: rotate(-12deg) translateY(0); }
+  50% { transform: rotate(12deg) translateY(-3px); }
+}
+.evento-shimmer {
+  background-image: linear-gradient(90deg, #ec7fa0, #5aaee8, #f4a6c0, #3d8fd6, #ec7fa0);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: evento-shimmer 3s linear infinite;
+}
+.evento-wiggle {
+  display: inline-block;
+  transform-origin: 50% 80%;
+  animation: evento-wiggle 1.4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

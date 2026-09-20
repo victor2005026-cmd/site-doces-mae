@@ -1,5 +1,6 @@
 export const CATEGORIES = [
   { id: 'todos', label: 'Todos' },
+  { id: 'eventos', label: 'Eventos' },
   { id: 'gourmet', label: 'Gourmet' },
   { id: 'caixas', label: 'Caixas' },
 ];

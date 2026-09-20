@@ -43,6 +43,7 @@ function rowToProduct(row) {
     price: Number(row.preco),
     category: row.categoria,
     image: row.imagem_url ?? '',
+    image2: row.imagem_url_2 ?? '',
     alt: row.nome,
     badge: row.mais_vendido ? 'Mais vendido' : undefined,
     active: row.ativo,
@@ -61,6 +62,7 @@ function productToRow(data) {
   if (data.price !== undefined) row.preco = data.price;
   if (data.category !== undefined) row.categoria = data.category;
   if (data.image !== undefined) row.imagem_url = data.image;
+  if (data.image2 !== undefined) row.imagem_url_2 = data.image2 || null;
   if (data.active !== undefined) row.ativo = data.active;
   if (data.mostSold !== undefined) row.mais_vendido = data.mostSold;
   else if (data.badge !== undefined) row.mais_vendido = Boolean(data.badge);

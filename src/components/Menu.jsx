@@ -5,12 +5,13 @@ import CategoryBar from './CategoryBar';
 import ProductSection from './ProductSection';
 import ProductCardSkeleton from './ProductCardSkeleton';
 import ProductDetailModal from './ProductDetailModal';
+import EventoTitulo from './EventoTitulo';
 
 const GROUPS = CATEGORIES.filter((cat) => cat.id !== 'todos');
 const SCROLL_OFFSET = 140;
 
 export default function Menu({ query = '' }) {
-  const { activeProducts, loading } = useAdminProducts();
+  const { activeProducts, loading, config } = useAdminProducts();
   const [active, setActive] = useState(GROUPS[0].id);
   const [produtoDetalhe, setProdutoDetalhe] = useState(null);
   const sectionRefs = useRef({});
@@ -54,7 +55,8 @@ export default function Menu({ query = '' }) {
   }, [visibleGroups]);
 
   const scrollToCategory = (id) => {
-    const targetId = id === 'todos' ? GROUPS[0].id : id;
+    // "Todos" leva à primeira seção que de fato aparece (Eventos pode estar vazio)
+    const targetId = id === 'todos' ? visibleGroups.find((g) => g.products.length > 0)?.id : id;
     const el = sectionRefs.current[targetId];
     if (!el) return;
     const top = el.getBoundingClientRect().top + window.scrollY - SCROLL_OFFSET;
@@ -63,9 +65,26 @@ export default function Menu({ query = '' }) {
 
   const hasResults = visibleFeatured.length > 0 || visibleGroups.some((g) => g.products.length > 0);
 
+  // Categoria sem nenhum produto ativo (ex: "Eventos" antes do primeiro item
+  // ser cadastrado) não ganha aba — senão o clique não leva a lugar nenhum.
+  // Durante o carregamento mostra todas pra barra não "piscar".
+  const tabCategories = useMemo(() => {
+    const visiveis = loading
+      ? CATEGORIES
+      : CATEGORIES.filter((c) => c.id === 'todos' || activeProducts.some((p) => p.category === c.id));
+    // A aba de eventos mostra o título configurado no admin (ex: "Dia dos Professores")
+    return visiveis.map((c) => (c.id === 'eventos' ? { ...c, label: <EventoTitulo config={config} compacto /> } : c));
+  }, [loading, activeProducts, config]);
+
+  // Se a aba marcada não existe (ex: "eventos" sem produtos), marca a primeira
+  // categoria que aparece de verdade.
+  const activeTab = tabCategories.some((c) => c.id === active)
+    ? active
+    : tabCategories.find((c) => c.id !== 'todos')?.id;
+
   return (
     <div id="cardapio">
-      <CategoryBar categories={CATEGORIES} active={active} onSelect={scrollToCategory} />
+      <CategoryBar categories={tabCategories} active={activeTab} onSelect={scrollToCategory} />
 
       {loading && (
         <div className="container-site py-8">
@@ -93,7 +112,7 @@ export default function Menu({ query = '' }) {
             <ProductSection
               key={group.id}
               id={group.id}
-              title={group.label}
+              title={group.id === 'eventos' ? <EventoTitulo config={config} /> : group.label}
               products={group.products}
               onOpenDetail={setProdutoDetalhe}
               ref={(el) => {

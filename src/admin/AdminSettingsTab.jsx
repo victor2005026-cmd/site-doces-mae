@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { gerarLinkGoogleMaps } from '../lib/mapsLink';
 import { enviarEmailTeste } from '../lib/emailNotificacao';
+import EventoTitulo from '../components/EventoTitulo';
 
 const DIAS = [
   { id: 0, label: 'Dom' }, { id: 1, label: 'Seg' }, { id: 2, label: 'Ter' },
@@ -83,6 +84,15 @@ export default function AdminSettingsTab() {
       antecedencia_minima_horas: cfg.antecedencia_minima_horas,
       taxa_entrega_padrao: cfg.taxa_entrega_padrao,
       pedido_minimo: cfg.pedido_minimo,
+      // só envia se as colunas já existem no banco (migração rodada) — senão
+      // o update inteiro falharia por coluna desconhecida
+      ...('evento_titulo' in cfg
+        ? {
+            evento_titulo: (cfg.evento_titulo ?? '').trim() || null,
+            evento_destaque: (cfg.evento_destaque ?? '').trim() || null,
+            evento_emoji: (cfg.evento_emoji ?? '').trim() || null,
+          }
+        : {}),
       endereco_retirada: cfg.endereco_retirada,
       horario_funcionamento: cfg.horario_funcionamento,
       horario_retirada: cfg.horario_retirada,
@@ -219,6 +229,31 @@ export default function AdminSettingsTab() {
             A taxa padrão só é usada como reserva — bairros cadastrados na aba "Taxas de entrega" têm prioridade.
             Deixe o pedido mínimo em 0 pra não exigir valor mínimo nenhum.
           </p>
+        </div>
+
+        {/* Seção de eventos */}
+        <div className="rounded-card border border-border-light bg-bg-main p-5">
+          <h3 className="mb-1 font-heading text-[0.95rem] font-semibold text-text-primary">Seção de eventos</h3>
+          <p className="mb-4 text-[0.78rem] text-text-secondary">
+            Título que aparece no site pra categoria Eventos. A palavra em destaque ganha um brilho animado e o emoji fica balançando.
+            Deixe vazio pra aparecer só "Eventos".
+          </p>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <div className="sm:col-span-1">
+              <label className={lbl}>Título</label>
+              <input value={cfg.evento_titulo ?? ''} onChange={setField('evento_titulo')} placeholder="Dia dos Professores" className={ic} />
+            </div>
+            <div>
+              <label className={lbl}>Palavra em destaque</label>
+              <input value={cfg.evento_destaque ?? ''} onChange={setField('evento_destaque')} placeholder="Professores" className={ic} />
+            </div>
+            <div>
+              <label className={lbl}>Emoji</label>
+              <input value={cfg.evento_emoji ?? ''} onChange={setField('evento_emoji')} placeholder="🍎" maxLength={8} className={ic} />
+            </div>
+          </div>
+          <p className="mt-3 text-[0.78rem] text-text-secondary">Prévia:</p>
+          <p className="font-heading text-[1.3rem] font-semibold text-text-primary"><EventoTitulo config={cfg} /></p>
         </div>
 
         {/* Endereço de retirada */}

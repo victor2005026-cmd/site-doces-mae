@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS public.produtos (
   preco         numeric     NOT NULL,
   categoria     text        NOT NULL,   -- gourmet | caixas
   imagem_url    text,
+  imagem_url_2  text,       -- segunda foto (opcional); com ela o site mostra um carrossel
   ativo         boolean     NOT NULL DEFAULT true,
   mais_vendido  boolean     NOT NULL DEFAULT false,
   ordem         int         NOT NULL DEFAULT 0,
@@ -138,7 +139,10 @@ CREATE TABLE IF NOT EXISTS public.configuracoes (
   emailjs_template_id         text,   -- painel do EmailJS → Email Templates
   emailjs_public_key          text,   -- painel do EmailJS → Account → General → Public Key
   notif_whatsapp_ativo        boolean NOT NULL DEFAULT false,
-  notif_whatsapp_numero       text    -- 11 dígitos; a API key fica em Secret, nunca nesta tabela
+  notif_whatsapp_numero       text,   -- 11 dígitos; a API key fica em Secret, nunca nesta tabela
+  evento_titulo               text,   -- título da seção Eventos no site (ex: 'Dia dos Professores'); vazio = 'Eventos'
+  evento_destaque             text,   -- palavra do título que ganha o brilho animado (ex: 'Professores')
+  evento_emoji                text    -- emoji que fica balançando ao lado do título (ex: '🍎')
 );
 
 CREATE TABLE IF NOT EXISTS public.datas_bloqueadas (
@@ -909,3 +913,15 @@ ON CONFLICT (codigo) DO NOTHING;
 -- END;
 -- $$;
 -- GRANT EXECUTE ON FUNCTION public.criar_pedido_convidado(jsonb, jsonb) TO anon, authenticated;
+
+-- ============================================================
+-- MIGRAÇÃO (projetos já existentes): título animado da seção
+-- Eventos (configurável em Admin > Configurações) + segunda foto
+-- opcional por produto (carrossel). O site funciona sem rodar
+-- isto, mas o título animado e a segunda foto só passam a valer
+-- depois — sem a coluna, o admin não consegue salvar a foto 2.
+-- ============================================================
+-- ALTER TABLE public.produtos ADD COLUMN IF NOT EXISTS imagem_url_2 text;
+-- ALTER TABLE public.configuracoes ADD COLUMN IF NOT EXISTS evento_titulo text;
+-- ALTER TABLE public.configuracoes ADD COLUMN IF NOT EXISTS evento_destaque text;
+-- ALTER TABLE public.configuracoes ADD COLUMN IF NOT EXISTS evento_emoji text;

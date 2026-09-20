@@ -2,6 +2,7 @@ import { formatPrice } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { useToast } from '../context/ToastContext';
 import PesoBadge from './PesoBadge';
+import ProductImageCarousel from './ProductImageCarousel';
 
 export default function ProductCard({ product, onOpenDetail }) {
   const { addItem } = useCart();
@@ -27,11 +28,10 @@ export default function ProductCard({ product, onOpenDetail }) {
       className="group relative flex cursor-pointer flex-col overflow-hidden rounded-card border border-border-light bg-bg-main transition-shadow duration-200 hover:shadow-md"
     >
       <div className="relative aspect-square overflow-hidden bg-bg-alt">
-        <img
-          src={product.image}
+        <ProductImageCarousel
+          images={[product.image, product.image2]}
           alt={product.alt}
-          loading="lazy"
-          className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+          className="transition-transform duration-300 group-hover:scale-105"
         />
         {product.badge && (
           <span className="absolute left-3 top-3 rounded-full bg-rose px-3 py-1 text-[0.7rem] font-semibold text-white shadow-sm">

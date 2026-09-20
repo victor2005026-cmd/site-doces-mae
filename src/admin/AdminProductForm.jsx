@@ -28,6 +28,7 @@ export default function AdminProductForm({ product, onClose }) {
   const { addProduct, updateProduct } = useAdminProducts();
   const isEdit = Boolean(product);
   const originalImageUrl = product?.image || '';
+  const originalImageUrl2 = product?.image2 || '';
 
   const [form, setForm] = useState(() =>
     product
@@ -46,10 +47,14 @@ export default function AdminProductForm({ product, onClose }) {
   const [compressedBlob, setCompressedBlob] = useState(null);
   const [originalSizeKB, setOriginalSizeKB] = useState(null);
   const [compressedSizeKB, setCompressedSizeKB] = useState(null);
+  const [previewUrl2, setPreviewUrl2] = useState(originalImageUrl2);
+  const [compressedBlob2, setCompressedBlob2] = useState(null);
+  const [removed2, setRemoved2] = useState(false);
   const [compressing, setCompressing] = useState(false);
   const [imgError, setImgError] = useState('');
   const [saving, setSaving] = useState(false);
   const imgInputId = useId();
+  const imgInputId2 = useId();
 
   const set = (field) => (e) => setForm((prev) => ({ ...prev, [field]: e.target.value }));
 
@@ -83,6 +88,39 @@ export default function AdminProductForm({ product, onClose }) {
     }
   };
 
+  // Segunda foto (opcional): junto com a primeira, o site mostra as duas num carrossel
+  const handleFile2 = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    setImgError('');
+    const erro = validarImagemProduto(file);
+    if (erro) {
+      setImgError(erro);
+      return;
+    }
+
+    setRemoved2(false);
+    setCompressedBlob2(null);
+    setPreviewUrl2(URL.createObjectURL(file));
+    setCompressing(true);
+    try {
+      setCompressedBlob2(await comprimirImagemProduto(file));
+    } catch (err) {
+      setImgError(err.message);
+      setPreviewUrl2(originalImageUrl2);
+    } finally {
+      setCompressing(false);
+    }
+  };
+
+  const handleRemoveFoto2 = () => {
+    setCompressedBlob2(null);
+    setPreviewUrl2('');
+    setRemoved2(Boolean(originalImageUrl2));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (compressing) return;
@@ -98,8 +136,16 @@ export default function AdminProductForm({ product, onClose }) {
         imageUrl = await enviarImagemComprimida(compressedBlob, produtoId);
       }
 
+      // Foto 2: só mexe no banco se foi trocada ou removida (assim salvar
+      // um produto sem mexer nela não depende da coluna nova existir).
+      const mudouFoto2 = Boolean(compressedBlob2) || removed2;
+      let imageUrl2 = originalImageUrl2;
+      if (compressedBlob2) imageUrl2 = await enviarImagemComprimida(compressedBlob2, `${produtoId}-2`);
+      else if (removed2) imageUrl2 = '';
+
       const data = {
         ...(isEdit ? {} : { id: produtoId }),
+        ...(mudouFoto2 ? { image2: imageUrl2 } : {}),
         name: form.name.trim(),
         description: form.description.trim(),
         price: parseFloat(form.price),
@@ -116,6 +162,10 @@ export default function AdminProductForm({ product, onClose }) {
 
       if (compressedBlob && originalImageUrl && originalImageUrl !== imageUrl) {
         deletarImagemProduto(originalImageUrl);
+      }
+
+      if (mudouFoto2 && originalImageUrl2 && originalImageUrl2 !== imageUrl2) {
+        deletarImagemProduto(originalImageUrl2);
       }
 
       onClose();
@@ -177,6 +227,37 @@ export default function AdminProductForm({ product, onClose }) {
                         : `${originalSizeKB} KB`}
                   </p>
                 )}
+              </div>
+            </div>
+            {/* Foto 2 (opcional) */}
+            <div className="mt-3 border-t border-border-light pt-3">
+              <p className={labelClass}>
+                Foto 2 <span className="font-normal text-text-secondary">(opcional — as duas viram um carrossel no site)</span>
+              </p>
+              <div className="flex items-center gap-4">
+                {previewUrl2 && (
+                  <img src={previewUrl2} alt="preview foto 2" className="h-16 w-16 flex-shrink-0 rounded-card object-cover" />
+                )}
+                <div className="flex flex-wrap items-center gap-2">
+                  <label
+                    htmlFor={imgInputId2}
+                    className="cursor-pointer rounded-full border border-border-light px-4 py-2 text-[0.85rem] font-medium text-text-primary hover:border-rose hover:text-rose"
+                  >
+                    {previewUrl2 ? 'Trocar foto 2' : 'Adicionar foto 2'}
+                  </label>
+                  <input
+                    id={imgInputId2}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={handleFile2}
+                    className="hidden"
+                  />
+                  {previewUrl2 && (
+                    <button type="button" onClick={handleRemoveFoto2} className="text-[0.82rem] text-text-secondary underline hover:text-rose">
+                      Remover
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
             {imgError && <p className="mt-1 text-[0.8rem] text-rose-dark">{imgError}</p>}
