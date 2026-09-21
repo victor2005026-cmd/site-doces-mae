@@ -88,7 +88,7 @@ export default function ProductDetailModal({ product, editItem, onClose }) {
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="flex max-h-[90vh] w-full max-w-[420px] flex-col overflow-y-auto overscroll-contain rounded-card bg-bg-main shadow-lg">
-        <div className="relative h-64 w-full flex-shrink-0 overflow-hidden bg-bg-alt sm:h-72">
+        <div className="relative aspect-square max-h-[55vh] w-full flex-shrink-0 overflow-hidden bg-bg-alt">
           <ProductImageCarousel images={[product.image, product.image2]} alt={product.alt} />
           {product.badge && (
             <span className="absolute left-3 top-3 rounded-full bg-rose px-3 py-1 text-[0.7rem] font-semibold text-white shadow-sm">
