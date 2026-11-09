@@ -76,7 +76,7 @@ body {
   50% { transform: rotate(12deg) translateY(-3px); }
 }
 .evento-shimmer {
-  background-image: linear-gradient(90deg, #ec7fa0, #5aaee8, #f4a6c0, #3d8fd6, #ec7fa0);
+  background-image: linear-gradient(90deg, #b3202e, #e5484d, #8e1622, #e5484d, #b3202e);
   background-size: 200% 100%;
   -webkit-background-clip: text;
   background-clip: text;

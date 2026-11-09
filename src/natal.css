@@ -1,0 +1,183 @@
+/* Decoração de Natal. Junto com DecoracaoNatal.jsx e as cores "rose" do
+   tailwind.config.js, é o que muda o visual da loja na temporada. */
+
+html body {
+  background-color: #fff9f4;
+  background-image:
+    radial-gradient(circle at 20px 30px, rgba(179, 32, 46, 0.05) 2px, transparent 3px),
+    radial-gradient(circle at 75px 90px, rgba(20, 107, 58, 0.05) 2px, transparent 3px);
+  background-size: 120px 120px;
+}
+
+/* Pisca-pisca: cada <span> é um trecho de fio com uma lâmpada no meio */
+.natal-pisca {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  display: flex;
+  height: 24px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.natal-pisca span {
+  position: relative;
+  flex: 0 0 46px;
+  height: 10px;
+  border-bottom: 2px solid #2f5d43;
+  border-radius: 0 0 50% 50%;
+}
+.natal-pisca span::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 10px;
+  width: 8px;
+  height: 11px;
+  margin-left: -4px;
+  border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%;
+  background: var(--lampada);
+  box-shadow: 0 0 8px 2px var(--lampada);
+  animation: natal-piscar 1.6s ease-in-out infinite;
+}
+.natal-pisca span:nth-child(4n + 1) { --lampada: #e5333f; }
+.natal-pisca span:nth-child(4n + 2) { --lampada: #f2b632; }
+.natal-pisca span:nth-child(4n + 3) { --lampada: #22a35c; }
+.natal-pisca span:nth-child(4n) { --lampada: #e5333f; }
+.natal-pisca span:nth-child(2n)::after { animation-delay: 0.8s; }
+
+@keyframes natal-piscar {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* Neve: bolinha branca com contorno azulado para aparecer também no fundo claro */
+.natal-neve {
+  position: fixed;
+  inset: 0;
+  z-index: 95;
+  overflow: hidden;
+  pointer-events: none;
+}
+.natal-neve span {
+  position: absolute;
+  top: -12px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(140, 175, 210, 0.45), 0 0 6px rgba(140, 175, 210, 0.5);
+  animation: natal-cair linear infinite;
+}
+@keyframes natal-cair {
+  0% { transform: translate(0, 0); opacity: 0.95; }
+  50% { transform: translate(24px, 52vh); }
+  100% { transform: translate(-10px, 105vh); opacity: 0.6; }
+}
+@media (max-width: 640px) {
+  .natal-neve span:nth-child(n + 11) { display: none; }
+}
+
+/* Listras de bengala doce: moldura do banner, sublinhado dos títulos e rodapé */
+.natal-moldura,
+.natal-listra,
+.natal-titulo-secao::after {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    #c1121f 0 10px,
+    #ffffff 10px 20px
+  );
+}
+.natal-moldura {
+  position: relative;
+  padding: 6px;
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(142, 22, 34, 0.18);
+}
+.natal-listra {
+  height: 8px;
+}
+.natal-laco {
+  position: absolute;
+  z-index: 2;
+  top: -14px;
+  left: 50%;
+  width: 84px;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.25));
+  pointer-events: none;
+}
+
+.natal-faixa {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 10px 16px;
+  border: 1px solid #d4a63a;
+  border-radius: var(--radius);
+  background-color: #a81b28;
+  background-image:
+    radial-gradient(circle at 18px 14px, rgba(255, 255, 255, 0.5) 1.5px, transparent 2px),
+    radial-gradient(circle at 58px 40px, rgba(255, 255, 255, 0.3) 1px, transparent 1.5px),
+    linear-gradient(100deg, #8e1622, #c1121f 50%, #8e1622);
+  background-size: 76px 54px, 76px 54px, auto;
+}
+
+.natal-titulo-secao {
+  display: inline-flex;
+  position: relative;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 10px;
+}
+.natal-titulo-secao::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 72px;
+  height: 4px;
+  border-radius: 2px;
+}
+
+/* Seção de eventos (a de Natal) ganha um painel próprio para saltar aos olhos */
+#eventos {
+  margin-top: 16px;
+  padding-bottom: 24px;
+  border: 1.5px solid rgba(179, 32, 46, 0.3);
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fdeaea, #fffdfb 70%);
+}
+
+/* Celular: laço menor e faixas numa linha só, sem disputar espaço com o texto */
+@media (max-width: 640px) {
+  .natal-laco {
+    top: -10px;
+    width: 62px;
+  }
+  .natal-faixa {
+    gap: 6px;
+    padding: 8px;
+  }
+  .natal-pisca span {
+    flex-basis: 38px;
+  }
+  /* O painel tem borda: precisa de respiro, ao contrário das outras seções */
+  #eventos > .container-site {
+    padding: 0 10px;
+  }
+}
+@media (max-width: 374px) {
+  .natal-faixa svg,
+  .natal-rodape svg {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .natal-neve {
+    display: none;
+  }
+}

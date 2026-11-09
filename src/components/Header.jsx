@@ -7,6 +7,7 @@ import MobileMenu from './MobileMenu';
 import ChangePasswordModal from './ChangePasswordModal';
 import AccountMenu from './AccountMenu';
 import PromocoesModal from './PromocoesModal';
+import { PiscaPisca } from './DecoracaoNatal';
 
 const CartIcon = (props) => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" {...props}>
@@ -104,6 +105,7 @@ export default function Header() {
             </button>
           </div>
         </div>
+        <PiscaPisca />
       </header>
 
       <MobileMenu

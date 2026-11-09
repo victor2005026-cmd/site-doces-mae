@@ -15,8 +15,9 @@ module.exports = {
           dark: '#B08A52',
         },
         rose: {
-          DEFAULT: '#E8A0AB',
-          dark: '#D98497',
+          // Vermelho de Natal. Cores normais da loja: #E8A0AB e #D98497.
+          DEFAULT: '#B3202E',
+          dark: '#8E1622',
         },
         border: {
           light: '#E8E3DC',

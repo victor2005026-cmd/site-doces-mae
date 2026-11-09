@@ -7,6 +7,8 @@ import Menu from './components/Menu';
 import CartDrawer from './components/CartDrawer';
 import CartSidebar from './components/CartSidebar';
 import Footer from './components/Footer';
+import { Neve } from './components/DecoracaoNatal';
+import './natal.css';
 import AdminPage from './admin/AdminPage';
 import CheckoutPage from './pages/CheckoutPage';
 import OrderConfirmationPage from './pages/OrderConfirmationPage';
@@ -45,6 +47,7 @@ function StoreFront() {
       </a>
 
       <Header />
+      <Neve />
 
       <main id="main-content" className="pt-[60px] md:pt-[70px]">
         <div id="topo" className="scroll-mt-[100px]" />

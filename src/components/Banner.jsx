@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { getStoreStatus, formatDiasLabel } from '../lib/storeHours';
 import { useAdminProducts } from '../context/AdminProductsContext';
 import { formatPrice } from '../data/products';
+import { FaixaNatal, Laco } from './DecoracaoNatal';
 
 export default function Banner() {
   const [showInfo, setShowInfo] = useState(false);
@@ -14,16 +15,19 @@ export default function Banner() {
 
   return (
     <section className="container-site pt-6">
-      <div className="relative overflow-hidden rounded-card bg-bg-alt">
-        {configLoaded ? (
-          <img
-            src={wideSrc}
-            alt="Brigadeiros artesanais Doces da Ale"
-            className="h-[260px] w-full object-cover object-center sm:h-[420px]"
-          />
-        ) : (
-          <div className="aspect-[21/6] w-full animate-pulse bg-bg-alt" />
-        )}
+      <div className="natal-moldura">
+        <Laco />
+        <div className="relative overflow-hidden rounded-card bg-bg-alt">
+          {configLoaded ? (
+            <img
+              src={wideSrc}
+              alt="Brigadeiros artesanais Doces da Ale"
+              className="h-[260px] w-full object-cover object-center sm:h-[420px]"
+            />
+          ) : (
+            <div className="aspect-[21/6] w-full animate-pulse bg-bg-alt" />
+          )}
+        </div>
       </div>
 
       <div className="relative z-[1] -mt-10 flex flex-col gap-3 sm:-mt-12 sm:flex-row sm:items-end">
@@ -61,6 +65,8 @@ export default function Banner() {
           )}
         </div>
       </div>
+
+      <FaixaNatal />
 
       {config?.frete_ativo && config?.modo_chuva_ativo && (
         <div className="relative z-[1] mt-3 rounded-card border border-gold/40 bg-gold/10 px-4 py-2.5 text-[0.85rem] font-medium text-gold-dark">
